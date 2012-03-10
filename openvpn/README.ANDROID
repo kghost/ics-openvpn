@@ -1,0 +1,12 @@
+
+2010-01-26 Updated to OpenVPN 2.1.1
+	   ./configure --enable-password-save --enable-iproute2 --disable-pkcs11 --with-ifconfig-path=/system/bin --with-iproute-path=/system/bin --with-route-path=/system/bi
+	   fries@desert.lnp.org
+
+2009-09-09 Added Android.mk and fixed config.h
+           fries@desert.lnp.org
+
+	openvpn currently looks for tun in /dev/net/tub
+        but the device file might be found under /dev/tun
+        on android devices
+
