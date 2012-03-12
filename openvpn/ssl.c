@@ -3456,6 +3456,8 @@ push_peer_info(struct buffer *buf, struct tls_session *session)
       buf_printf (&out, "IV_PLAT=freebsd\n");
 #elif defined(WIN32)
       buf_printf (&out, "IV_PLAT=win\n");
+#elif defined(TARGET_ANDROID)
+      buf_printf (&out, "IV_PLAT=android\n");
 #endif
 
       /* push mac addr */

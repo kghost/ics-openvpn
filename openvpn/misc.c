@@ -1517,6 +1517,8 @@ get_platform_prefix (void)
   return "F";
 #elif defined(WIN32)
   return "W";
+#elif defined(TARGET_ANDROID)
+  return "A";
 #else
   return "X";
 #endif

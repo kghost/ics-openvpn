@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.example.android.toyvpn;
+package info.kghost.android.openvpn;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.net.VpnService;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Button;
 
-public class ToyVpnClient extends Activity implements View.OnClickListener {
+import com.example.android.toyvpn.R;
+
+public class OpenVpnClient extends Activity implements View.OnClickListener {
     private TextView mServerAddress;
     private TextView mServerPort;
     private TextView mSharedSecret;
@@ -56,7 +56,7 @@ public class ToyVpnClient extends Activity implements View.OnClickListener {
     protected void onActivityResult(int request, int result, Intent data) {
         if (result == RESULT_OK) {
             String prefix = getPackageName();
-            Intent intent = new Intent(this, ToyVpnService.class)
+            Intent intent = new Intent(this, OpenVpnService.class)
                     .putExtra(prefix + ".ADDRESS", mServerAddress.getText().toString())
                     .putExtra(prefix + ".PORT", mServerPort.getText().toString())
                     .putExtra(prefix + ".SECRET", mSharedSecret.getText().toString());

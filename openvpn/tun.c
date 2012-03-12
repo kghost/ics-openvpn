@@ -936,6 +936,25 @@ do_ifconfig (struct tuntap *tt,
 	tt->did_ifconfig = true;
       }
 
+#elif defined(TARGET_ANDROID)
+      /* Set mtu */
+      char buffer[100];
+      buffer[0] = 'M';
+      int mtu = htonl(tun_mtu);
+      memcpy(buffer+1, &mtu, sizeof(mtu));
+      msg (M_INFO, "configure mtu %d", tun_mtu);
+      send (tt->control_fd, buffer, 1+sizeof(mtu), 0);
+      msg (M_INFO, "mtu done");
+
+      /* Add address */
+      buffer[0] = 'A';
+      in_addr_t ip = htonl(tt->local);
+      memcpy(buffer+1, &ip, sizeof(in_addr_t));
+      int mask = htonl(count_netmask_bits(ifconfig_remote_netmask));
+      memcpy(buffer+1+sizeof(in_addr_t), &mask, sizeof(mask));
+      msg (M_INFO, "configure address %s/%d", ifconfig_local, ntohl(mask));
+      send (tt->control_fd, buffer, 1+sizeof(in_addr_t)+sizeof(mask), 0);
+      msg (M_INFO, "address done");
 #else
       msg (M_FATAL, "Sorry, but I don't know how to do 'ifconfig' commands on this operating system.  You should ifconfig your TUN/TAP device manually or use an --up script.");
 #endif
@@ -4437,6 +4456,139 @@ ipset2ascii_all (struct gc_arena *gc)
       buf_printf(&out, "[%s]", ipset2ascii(i));
     }
   return BSTR (&out);
+}
+
+#elif defined(TARGET_ANDROID)
+
+static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
+{
+  struct msghdr msghdr;
+  struct iovec iov[1];
+  ssize_t n;
+
+  union {
+    struct cmsghdr cm;
+    char     control[CMSG_SPACE(sizeof (int))];
+  } control_un;
+  struct cmsghdr  *cmptr;
+
+  msghdr.msg_control  = control_un.control;
+  msghdr.msg_controllen = sizeof(control_un.control);
+
+  msghdr.msg_name = NULL;
+  msghdr.msg_namelen = 0;
+
+  iov[0].iov_base = ptr;
+  iov[0].iov_len = nbytes;
+  msghdr.msg_iov = iov;
+  msghdr.msg_iovlen = 1;
+
+  if ( (n = recvmsg(fd, &msghdr, 0)) <= 0)
+    return (n);
+
+  if ( (cmptr = CMSG_FIRSTHDR(&msghdr)) != NULL &&
+      cmptr->cmsg_len == CMSG_LEN(sizeof(int))) {
+    if (cmptr->cmsg_level != SOL_SOCKET)
+      msg (M_ERR, "control level != SOL_SOCKET");
+    if (cmptr->cmsg_type != SCM_RIGHTS)
+      msg (M_ERR, "control type != SCM_RIGHTS");
+    *recvfd = *((int *) CMSG_DATA(cmptr));
+  } else
+    *recvfd = -1;           /* descriptor was not passed */
+
+  return (n);
+}
+
+static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
+{
+  struct msghdr msg;
+  struct iovec iov[1];
+
+  union {
+    struct cmsghdr cm;
+    char    control[CMSG_SPACE(sizeof(int))];
+  } control_un;
+  struct cmsghdr *cmptr;
+
+  msg.msg_control = control_un.control;
+  msg.msg_controllen = sizeof(control_un.control);
+
+  cmptr = CMSG_FIRSTHDR(&msg);
+  cmptr->cmsg_len = CMSG_LEN(sizeof(int));
+  cmptr->cmsg_level = SOL_SOCKET;
+  cmptr->cmsg_type = SCM_RIGHTS;
+  *((int *) CMSG_DATA(cmptr)) = sendfd;
+
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
+
+  iov[0].iov_base = ptr;
+  iov[0].iov_len = nbytes;
+  msg.msg_iov = iov;
+  msg.msg_iovlen = 1;
+
+  return (sendmsg(fd, &msg, 0));
+}
+
+void
+open_tun (const char *dev, const char *dev_type, const char *dev_node, bool ipv6, struct tuntap *tt)
+{
+  int socket = atoi(dev);
+  if (socket <= 0) {
+    msg (M_FATAL, "Cannot find control socket");
+    return;
+  }
+  tt->type = DEV_TYPE_TUN;
+  tt->control_fd = socket;
+  tt->fd = -1;
+  msg (M_INFO, "open_tun: set control_fd(%d) successful", tt->control_fd);
+}
+
+void
+close_tun (struct tuntap* tt)
+{
+  if (tt)
+    {
+      if (tt->fd >= 0) {
+        close (tt->fd);
+      }
+      free (tt);
+    }
+}
+
+void finish_open_tune (struct tuntap* tt, int link_fd)
+{
+  int socket = tt->control_fd;
+  int s = write_fd(socket, "T", 1, link_fd);
+  if (s <= 0) {
+    msg (M_FATAL, "Send open_tun command failed");
+    return;
+  }
+
+  char buffer[100];
+  int tun_fd = -1;
+  s = read_fd(socket, buffer, sizeof(buffer), &tun_fd);
+  if (s != 1 || buffer[0] != 't' || tun_fd < 0) {
+    msg (M_FATAL, "Cannot open tun");
+    return;
+  }
+
+  tt->fd = tun_fd;
+  set_nonblock (tt->fd);
+  set_cloexec (tt->fd);
+  msg (M_INFO, "Android TUN device %d opened", tun_fd);
+}
+
+int
+write_tun (struct tuntap* tt, uint8_t *buf, int len)
+{
+  return write (tt->fd, buf, len);
+}
+
+int
+read_tun (struct tuntap* tt, uint8_t *buf, int len)
+{
+  return read (tt->fd, buf, len);
 }
 
 #else /* generic */

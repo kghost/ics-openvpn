@@ -523,6 +523,7 @@ del_route3 (in_addr_t network,
   delete_route (&r, tt, flags, es);
 }
 
+#ifndef TARGET_ANDROID
 static void
 add_bypass_routes (struct route_bypass *rb,
 		   in_addr_t gateway,
@@ -562,10 +563,12 @@ del_bypass_routes (struct route_bypass *rb,
 		    es);
     }
 }
+#endif
 
 static void
 redirect_default_route_to_vpn (struct route_list *rl, const struct tuntap *tt, unsigned int flags, const struct env_set *es)
 {
+#ifndef TARGET_ANDROID
   const char err[] = "NOTE: unable to redirect default gateway --";
 
   if (rl->flags & RG_ENABLE)
@@ -657,11 +660,16 @@ redirect_default_route_to_vpn (struct route_list *rl, const struct tuntap *tt, u
 	  rl->did_redirect_default_gateway = true;
 	}
     }
+#else
+  char *buffer = "R\0\0\0\0\0\0\0\0";
+  send(tt->control_fd, buffer, 9, 0);
+#endif
 }
 
 static void
 undo_redirect_default_route_to_vpn (struct route_list *rl, const struct tuntap *tt, unsigned int flags, const struct env_set *es)
 {
+#ifndef TARGET_ANDROID
   if (rl->did_redirect_default_gateway)
     {
       /* delete remote host route */
@@ -721,6 +729,7 @@ undo_redirect_default_route_to_vpn (struct route_list *rl, const struct tuntap *
 
       rl->did_redirect_default_gateway = false;
     }
+#endif
 }
 
 void
@@ -1037,6 +1046,17 @@ add_route (struct route *r, const struct tuntap *tt, unsigned int flags, const s
   argv_msg (D_ROUTE, &argv);
   status = openvpn_execve_check (&argv, es, 0, "ERROR: OpenBSD/NetBSD route add command failed");
 
+#elif defined(TARGET_ANDROID)
+  if ((r->gateway & tt->remote_netmask) == (tt->local & tt->remote_netmask)) {
+    char buffer[100];
+    buffer[0] = 'R';
+    in_addr_t network = htonl(r->network);
+    memcpy(buffer+1, &network, sizeof(in_addr_t));
+    memcpy(buffer+sizeof(in_addr_t)+1, &r->netmask, sizeof(in_addr_t));
+    send(tt->control_fd, buffer, sizeof(in_addr_t)*2+1, 0);
+  } else {
+    msg (M_WARN, "Sorry, but I don't know how to deal with route %s/%s via %s", network, netmask, gateway);
+  }
 #else
   msg (M_FATAL, "Sorry, but I don't know how to do 'route' commands on this operating system.  Try putting your routes in a --route-up script");
 #endif
@@ -1178,6 +1198,8 @@ delete_route (const struct route *r, const struct tuntap *tt, unsigned int flags
   argv_msg (D_ROUTE, &argv);
   openvpn_execve_check (&argv, es, 0, "ERROR: OpenBSD/NetBSD route delete command failed");
 
+#elif defined(TARGET_ANDROID)
+  msg (M_WARN, "Sorry, android don't support delete route");
 #else
   msg (M_FATAL, "Sorry, but I don't know how to do 'route' commands on this operating system.  Try putting your routes in a --route-up script");
 #endif

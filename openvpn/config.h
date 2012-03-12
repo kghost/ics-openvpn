@@ -8,7 +8,7 @@
 #define CONFIGURE_PF 1
 
 /* enable iproute2 support */
-#undef CONFIG_FEATURE_IPROUTE 
+/* #undef CONFIG_FEATURE_IPROUTE */
 
 /* Use memory debugging function in OpenSSL */
 /* #undef CRYPTO_MDEBUG */
@@ -20,10 +20,10 @@
 #define EMPTY_ARRAY_SIZE 0
 
 /* Enable client capability only */
-/* #undef ENABLE_CLIENT_ONLY */
+#define ENABLE_CLIENT_ONLY 1
 
 /* Enable client/server capability */
-#define ENABLE_CLIENT_SERVER 1
+/* #undef ENABLE_CLIENT_SERVER */
 
 /* Enable debugging support */
 #define ENABLE_DEBUG 1
@@ -35,7 +35,7 @@
 #define ENABLE_HTTP_PROXY 1
 
 /* Enable management server capability */
-#define ENABLE_MANAGEMENT 1
+/* #undef ENABLE_MANAGEMENT */
 
 /* Enable multi-homed UDP server capability */
 #define ENABLE_MULTIHOME 1
@@ -47,7 +47,7 @@
 #define ENABLE_PORT_SHARE 1
 
 /* Enable smaller executable size */
-/* #undef ENABLE_SMALL */
+#define ENABLE_SMALL 1
 
 /* Enable Socks proxy support */
 #define ENABLE_SOCKS 1
@@ -305,7 +305,7 @@
 #define HAVE_SETUID 1
 
 /* Define to 1 if you have the <signal.h> header file. */
-#define HAVE_SIGNAL_H 1
+#define HAVE_SIGNAL_H 0
 
 /* Define to 1 if you have the `socket' function. */
 #define HAVE_SOCKET 1
@@ -498,7 +498,7 @@
 /* #undef TARGET_FREEBSD */
 
 /* Are we running on Linux? */
-#define TARGET_LINUX 1
+/* #undef TARGET_LINUX */
 
 /* Are we running NetBSD? */
 /* #undef TARGET_NETBSD */
@@ -512,6 +512,9 @@
 /* Are we running WIN32? */
 /* #undef TARGET_WIN32 */
 
+/* Are we running on Android? */
+#define TARGET_ANDROID 1
+
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #define TIME_WITH_SYS_TIME 1
 
@@ -522,7 +525,7 @@
 #define USE_CRYPTO 1
 
 /* Use libdl for dynamic library loading */
-#define USE_LIBDL 1
+/* #undef USE_LIBDL */
 
 /* Use LoadLibrary to load DLLs on Windows */
 /* #undef USE_LOAD_LIBRARY */

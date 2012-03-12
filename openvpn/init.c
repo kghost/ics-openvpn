@@ -827,7 +827,7 @@ do_genkey (const struct options * options)
 bool
 do_persist_tuntap (const struct options *options)
 {
-#ifdef TUNSETPERSIST
+#if defined(TARGET_LINUX) && defined(TUNSETPERSIST)
   if (options->persist_config)
     {
       /* sanity check on options for --mktun or --rmtun */
@@ -1325,6 +1325,11 @@ do_open_tun (struct context *c)
 	frame_set_mtu_dynamic (&c->c2.frame,
 			       c->c1.tuntap->post_open_mtu,
 			       SET_MTU_TUN | SET_MTU_UPPER_BOUND);
+
+#ifdef TARGET_ANDROID
+      void finish_open_tune (struct tuntap* tt, int link_fd);
+      finish_open_tune (c->c1.tuntap, c->c2.link_socket->sd);
+#endif
 
       ret = true;
       static_context = c;

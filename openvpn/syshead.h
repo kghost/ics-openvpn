@@ -202,7 +202,7 @@
 #include <net/if.h>
 #endif
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
 #if defined(HAVE_NETINET_IF_ETHER_H)
 #include <netinet/if_ether.h>
@@ -470,7 +470,7 @@ socket_defined (const socket_descriptor_t sd)
 #if defined(ENABLE_CLIENT_SERVER) && defined(USE_CRYPTO) && defined(USE_SSL) && defined(HAVE_GETTIMEOFDAY)
 #define P2MP 1
 #else
-#define P2MP 0
+#define P2MP 1
 #endif
 
 #if P2MP && !defined(ENABLE_CLIENT_ONLY)

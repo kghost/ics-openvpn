@@ -1,0 +1,6 @@
+.classpath
+.project
+bin/
+gen/
+project.properties
+tags

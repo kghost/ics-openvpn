@@ -172,6 +172,10 @@ struct tuntap
   int ip_fd;
 #endif
 
+#ifdef TARGET_ANDROID
+  int control_fd;
+#endif
+
   /* used for printing status info only */
   unsigned int rwflags_debug;
 
@@ -282,6 +286,8 @@ ifconfig_order(void)
   return IFCONFIG_AFTER_TUN_OPEN;
 #elif defined(WIN32)
   return IFCONFIG_BEFORE_TUN_OPEN;
+#elif defined(TARGET_ANDROID)
+  return IFCONFIG_AFTER_TUN_OPEN;
 #else
   return IFCONFIG_DEFAULT;
 #endif
