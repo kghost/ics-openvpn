@@ -1047,16 +1047,22 @@ add_route (struct route *r, const struct tuntap *tt, unsigned int flags, const s
   status = openvpn_execve_check (&argv, es, 0, "ERROR: OpenBSD/NetBSD route add command failed");
 
 #elif defined(TARGET_ANDROID)
-  if ((r->gateway & tt->remote_netmask) == (tt->local & tt->remote_netmask)) {
+  /* if ((r->gateway & tt->remote_netmask) == (tt->local & tt->remote_netmask)) */ {
     char buffer[100];
     buffer[0] = 'R';
     in_addr_t network = htonl(r->network);
     memcpy(buffer+1, &network, sizeof(in_addr_t));
-    memcpy(buffer+sizeof(in_addr_t)+1, &r->netmask, sizeof(in_addr_t));
+    int mask = 0;
+    int net = r->netmask;
+    while (net != 0) {
+      mask++; net <<= 1;
+    }
+    mask = htonl(mask);
+    memcpy(buffer+sizeof(in_addr_t)+1, &mask, sizeof(int));
     send(tt->control_fd, buffer, sizeof(in_addr_t)*2+1, 0);
-  } else {
+  }/* else {
     msg (M_WARN, "Sorry, but I don't know how to deal with route %s/%s via %s", network, netmask, gateway);
-  }
+  }*/
 #else
   msg (M_FATAL, "Sorry, but I don't know how to do 'route' commands on this operating system.  Try putting your routes in a --route-up script");
 #endif

@@ -44,12 +44,12 @@ public class OpenVpnService extends VpnService {
 						buffer.position(0);
 						buffer.limit(0);
 						FileDescriptorHolder fd = new FileDescriptorHolder();
-						vpn.recv(buffer, fd);
+						if (vpn.recv(buffer, fd) <= 0) {
+							stop = true;
+							break;
+						}
 						switch (buffer.get()) {
 						case 'T': {
-							buffer.clear();
-							buffer.put((byte) 0x74); // 't'
-							buffer.flip();
 							if (!fd.valid())
 								throw new RuntimeException(
 										"remote fd not valid !!!");
@@ -57,6 +57,10 @@ public class OpenVpnService extends VpnService {
 							fd.close();
 							FileDescriptorHolder tun = new FileDescriptorHolder(
 									builder.establish().detachFd());
+
+							buffer.clear();
+							buffer.put((byte) 0x74); // 't'
+							buffer.flip();
 							vpn.send(buffer, tun);
 							tun.close();
 							break;
@@ -76,6 +80,12 @@ public class OpenVpnService extends VpnService {
 									mask);
 							break;
 						}
+						case 'D': {
+							byte[] ip = new byte[4];
+							buffer.get(ip);
+							builder.addDnsServer(InetAddress.getByAddress(ip));
+							break;
+						}
 						case 'M': {
 							int mtu = buffer.getInt();
 							builder.setMtu(mtu);
@@ -83,7 +93,8 @@ public class OpenVpnService extends VpnService {
 						}
 						}
 					} catch (InterruptedException e) {
-
+						stop = true;
+						break;
 					}
 				}
 
@@ -106,14 +117,20 @@ public class OpenVpnService extends VpnService {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		mThread.start();
-		return START_STICKY;
+		if (mThread.isAlive()) {
+			return START_STICKY;
+		} else {
+			mThread.start();
+			return START_STICKY;
+		}
 	}
 
 	@Override
 	public void onDestroy() {
 		stop = true;
 		mThread.interrupt();
+		vpn.stop();
+		vpn = null;
 		try {
 			mThread.join();
 		} catch (InterruptedException e) {

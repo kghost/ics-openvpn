@@ -23,8 +23,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
-import com.example.android.toyvpn.R;
-
 public class OpenVpnClient extends Activity implements View.OnClickListener {
     private TextView mServerAddress;
     private TextView mServerPort;

@@ -109,6 +109,22 @@ struct tuntap_options {
   int txqueuelen;
 };
 
+#elif TARGET_ANDROID
+
+
+struct tuntap_options {
+  bool dhcp_options;
+
+  const char *domain;        /* DOMAIN (15) */
+
+#define N_DHCP_ADDR 4        /* Max # of addresses allowed for
+			        DNS, WINS, etc. */
+
+  /* DNS (6) */
+  in_addr_t dns[N_DHCP_ADDR];
+  int dns_len;
+};
+
 #else
 
 struct tuntap_options {

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory>
+        <EditTextPreference android:title="VPN name" android:key="name"/>
+        <EditTextPreference android:title="Server address" android:key="address"/>
+        <CheckBoxPreference android:title="User authentication" android:key="auth"/>
+        <ListPreference android:title="CA certification" android:key="ca"/>
+        <ListPreference android:title="User certification" android:key="cert"/>
+    </PreferenceCategory>
+</PreferenceScreen>

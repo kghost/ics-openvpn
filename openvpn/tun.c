@@ -950,11 +950,25 @@ do_ifconfig (struct tuntap *tt,
       buffer[0] = 'A';
       in_addr_t ip = htonl(tt->local);
       memcpy(buffer+1, &ip, sizeof(in_addr_t));
-      int mask = htonl(count_netmask_bits(ifconfig_remote_netmask));
+      //int mask = htonl(count_netmask_bits(ifconfig_remote_netmask));
+      int mask = htonl(32);
       memcpy(buffer+1+sizeof(in_addr_t), &mask, sizeof(mask));
       msg (M_INFO, "configure address %s/%d", ifconfig_local, ntohl(mask));
       send (tt->control_fd, buffer, 1+sizeof(in_addr_t)+sizeof(mask), 0);
       msg (M_INFO, "address done");
+
+      /* Add dns */
+      if (tt->options.dhcp_options) {
+        buffer[0] = 'D';
+        int i;
+        for (i = 0; i < tt->options.dns_len; ++i) {
+          in_addr_t dns = htonl(tt->options.dns[i]);
+          memcpy(buffer+1, &dns, sizeof(in_addr_t));
+          msg (M_INFO, "Add dns %s", print_in_addr_t (tt->options.dns[i], 0, &gc));
+          send (tt->control_fd, buffer, 1+sizeof(in_addr_t), 0);
+        }
+        msg (M_INFO, "dns done");
+      }
 #else
       msg (M_FATAL, "Sorry, but I don't know how to do 'ifconfig' commands on this operating system.  You should ifconfig your TUN/TAP device manually or use an --up script.");
 #endif
