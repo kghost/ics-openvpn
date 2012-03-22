@@ -18,7 +18,7 @@
 
 package info.kghost.android.openvpn;
 
-import info.kghost.android.openvpn.R;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -50,9 +50,25 @@ class OpenvpnEditor extends VpnProfileEditor {
 	private CheckBoxPreference mUserAuth;
 
 	// private ListPreference mCert;
+	private Preference mUserCert;
 
 	public OpenvpnEditor(OpenvpnProfile p) {
 		super(p);
+	}
+
+	private static abstract class RunnableEx<T> implements Runnable {
+		private T m;
+
+		public RunnableEx(T o) {
+			m = o;
+		}
+
+		@Override
+		public void run() {
+			run(m);
+		}
+
+		protected abstract void run(T o);
 	}
 
 	@Override
@@ -74,6 +90,76 @@ class OpenvpnEditor extends VpnProfileEditor {
 					}
 				});
 		subpanel.addPreference(mUserAuth);
+
+		// mCert = new ListPreference(c);
+		// mCert.setTitle(R.string.vpn_ca_certificate);
+		// if (profile.getCertName() == null) {
+		// mCert.setSummary(R.string.vpn_ca_certificate_title);
+		// } else {
+		// mCert.setSummary(profile.getCertName());
+		// }
+		//
+		// try {
+		// KeyStore ks = KeyStore.getInstance("AndroidCAStore");
+		// ks.load(null, null);
+		// String[] s = new String[ks.size()];
+		// Enumeration<String> aliases = ks.aliases();
+		// for (int i = 0; i < s.length; ++i) {
+		// s[i] = aliases.nextElement();
+		// }
+		//
+		// mCert.setEntryValues(s);
+		// } catch (KeyStoreException e) {
+		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
+		// } catch (NoSuchAlgorithmException e) {
+		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
+		// } catch (CertificateException e) {
+		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
+		// } catch (IOException e) {
+		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
+		// }
+		// mCert.setOnPreferenceChangeListener(new
+		// Preference.OnPreferenceChangeListener() {
+		// @Override
+		// public boolean onPreferenceChange(Preference pref, Object newValue) {
+		// String alias = (String) newValue;
+		// profile.setCertName(alias);
+		// ((Activity) c).runOnUiThread(new RunnableEx<String>(alias) {
+		// @Override
+		// public void run(String alias) {
+		// mCert.setSummary(alias);
+		// }
+		// });
+		// return true;
+		// }
+		// });
+		// subpanel.addPreference(mCert);
+
+		mUserCert = new CertChoosePreference(c);
+		mUserCert.setTitle(R.string.vpn_user_certificate);
+		if (profile.getUserCertName() == null) {
+			mUserCert.setSummary(R.string.vpn_user_certificate_title);
+		} else {
+			mUserCert.setSummary(profile.getUserCertName());
+		}
+		mUserCert
+				.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+					@Override
+					public boolean onPreferenceChange(Preference pref,
+							Object newValue) {
+						String alias = (String) newValue;
+						profile.setUserCertName(alias);
+						((Activity) c).runOnUiThread(new RunnableEx<String>(
+								alias) {
+							@Override
+							public void run(String alias) {
+								mUserCert.setSummary(alias);
+							}
+						});
+						return true;
+					}
+				});
+		subpanel.addPreference(mUserCert);
 	}
 
 	@Override

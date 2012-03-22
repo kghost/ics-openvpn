@@ -19,226 +19,236 @@ package info.kghost.android.openvpn;
 import android.os.Parcel;
 
 /**
- * The profile for Openvpn type of VPN.
- * {@hide}
+ * The profile for Openvpn type of VPN. {@hide}
  */
 public class OpenvpnProfile extends VpnProfile {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    private static final String PROTO_UDP = "udp";
+	private static final String PROTO_UDP = "udp";
 
-    private static final String PROTO_TCP = "tcp";
+	private static final String PROTO_TCP = "tcp";
 
-    // Standard Settings
-    private boolean mUserAuth = false;
+	// Standard Settings
+	private boolean mUserAuth = false;
 
-    private String mCert;
+	// private String mCert;
+	private String mUserCert;
 
-    // Advanced Settings
-    private int mPort = 1194;
+	// Advanced Settings
+	private int mPort = 1194;
 
-    private String mProto = PROTO_UDP;
+	private String mProto = PROTO_UDP;
 
-    private boolean mUseCompLzo = false;
+	private boolean mUseCompLzo = false;
 
-    private boolean mSupplyAddr = false;
+	private boolean mSupplyAddr = false;
 
-    private boolean mRedirectGateway = false;
+	private boolean mRedirectGateway = false;
 
-    private String mLocalAddr;
+	private String mLocalAddr;
 
-    private String mRemoteAddr;
+	private String mRemoteAddr;
 
-    private String mCipher;
+	private String mCipher;
 
-    private int mKeySize;
+	private int mKeySize;
 
-    private String mExtra;
+	private String mExtra;
 
-    private boolean mUseTlsAuth;
+	private boolean mUseTlsAuth;
 
-    private String mTlsAuthKey;
+	private String mTlsAuthKey;
 
-    private String mTlsAuthKeyDirection;
+	private String mTlsAuthKeyDirection;
 
-    public void setPort(String port) {
-        try {
-            mPort = Integer.parseInt(port);
-        } catch (NumberFormatException e) {
-            // no update
-        }
-    }
+	public void setPort(String port) {
+		try {
+			mPort = Integer.parseInt(port);
+		} catch (NumberFormatException e) {
+			// no update
+		}
+	}
 
-    public String getPort() {
-        return Integer.toString(mPort);
-    }
+	public String getPort() {
+		return Integer.toString(mPort);
+	}
 
-    public String getProto() {
-        return mProto;
-    }
+	public String getProto() {
+		return mProto;
+	}
 
-    public CharSequence[] getProtoList() {
-        String[] s = new String[2];
-        s[0] = PROTO_UDP;
-        s[1] = PROTO_TCP;
-        return s;
-    }
+	public CharSequence[] getProtoList() {
+		String[] s = new String[2];
+		s[0] = PROTO_UDP;
+		s[1] = PROTO_TCP;
+		return s;
+	}
 
-    public void setProto(String p) {
-        if (p.contains(PROTO_TCP))
-            mProto = PROTO_TCP;
-        else if (p.contains(PROTO_UDP))
-            mProto = PROTO_UDP;
-    }
+	public void setProto(String p) {
+		if (p.contains(PROTO_TCP))
+			mProto = PROTO_TCP;
+		else if (p.contains(PROTO_UDP))
+			mProto = PROTO_UDP;
+	}
 
-    public boolean getUserAuth() {
-        return mUserAuth;
-    }
+	public boolean getUserAuth() {
+		return mUserAuth;
+	}
 
-    public void setUserAuth(boolean auth) {
-        mUserAuth = auth;
-    }
+	public void setUserAuth(boolean auth) {
+		mUserAuth = auth;
+	}
 
-    public String getCertName() {
-        return mCert;
-    }
+	// public String getCertName() {
+	// return mCert;
+	// }
+	//
+	// public void setCertName(String name) {
+	// mCert = name;
+	// }
 
-    public void setCertName(String name) {
-        mCert = name;
-    }
+	public String getUserCertName() {
+		return mUserCert;
+	}
 
-    public void setUseCompLzo(boolean b) {
-        mUseCompLzo = b;
-    }
+	public void setUserCertName(String name) {
+		mUserCert = name;
+	}
 
-    public boolean getUseCompLzo() {
-        return mUseCompLzo;
-    }
+	public void setUseCompLzo(boolean b) {
+		mUseCompLzo = b;
+	}
 
-    public void setRedirectGateway(boolean b) {
-        mRedirectGateway = b;
-    }
+	public boolean getUseCompLzo() {
+		return mUseCompLzo;
+	}
 
-    public boolean getRedirectGateway() {
-        return mRedirectGateway;
-    }
+	public void setRedirectGateway(boolean b) {
+		mRedirectGateway = b;
+	}
 
-    public void setSupplyAddr(boolean b) {
-        mSupplyAddr = b;
-    }
+	public boolean getRedirectGateway() {
+		return mRedirectGateway;
+	}
 
-    public boolean getSupplyAddr() {
-        return mSupplyAddr;
-    }
+	public void setSupplyAddr(boolean b) {
+		mSupplyAddr = b;
+	}
 
-    public void setLocalAddr(String addr) {
-        mLocalAddr = addr;
-    }
+	public boolean getSupplyAddr() {
+		return mSupplyAddr;
+	}
 
-    public String getLocalAddr() {
-        return mLocalAddr;
-    }
+	public void setLocalAddr(String addr) {
+		mLocalAddr = addr;
+	}
 
-    public void setRemoteAddr(String addr) {
-        mRemoteAddr = addr;
-    }
+	public String getLocalAddr() {
+		return mLocalAddr;
+	}
 
-    public String getRemoteAddr() {
-        return mRemoteAddr;
-    }
+	public void setRemoteAddr(String addr) {
+		mRemoteAddr = addr;
+	}
 
-    public void setCipher(String cipher) {
-        mCipher = cipher;
-    }
+	public String getRemoteAddr() {
+		return mRemoteAddr;
+	}
 
-    public String getCipher() {
-        return mCipher;
-    }
+	public void setCipher(String cipher) {
+		mCipher = cipher;
+	}
 
-    public void setKeySize(String keysize) {
-        try {
-            if (keysize.equals("0"))
-                mKeySize = 0;
-            else
-                mKeySize = Integer.parseInt(keysize);
-        } catch (NumberFormatException e) {
-            // no update
-        }
-    }
+	public String getCipher() {
+		return mCipher;
+	}
 
-    public String getKeySize() {
-        return Integer.toString(mKeySize);
-    }
+	public void setKeySize(String keysize) {
+		try {
+			if (keysize.equals("0"))
+				mKeySize = 0;
+			else
+				mKeySize = Integer.parseInt(keysize);
+		} catch (NumberFormatException e) {
+			// no update
+		}
+	}
 
-    public void setUseTlsAuth(boolean t) {
-        mUseTlsAuth = t;
-    }
+	public String getKeySize() {
+		return Integer.toString(mKeySize);
+	}
 
-    public boolean getUseTlsAuth() {
-        return mUseTlsAuth;
-    }
+	public void setUseTlsAuth(boolean t) {
+		mUseTlsAuth = t;
+	}
 
-    public void setTlsAuthKey(String k) {
-        mTlsAuthKey = k;
-    }
+	public boolean getUseTlsAuth() {
+		return mUseTlsAuth;
+	}
 
-    public String getTlsAuthKey() {
-        return mTlsAuthKey;
-    }
+	public void setTlsAuthKey(String k) {
+		mTlsAuthKey = k;
+	}
 
-    public void setTlsAuthKeyDirection(String d) {
-        mTlsAuthKeyDirection = d;
-    }
+	public String getTlsAuthKey() {
+		return mTlsAuthKey;
+	}
 
-    public String getTlsAuthKeyDirection() {
-        return mTlsAuthKeyDirection;
-    }
+	public void setTlsAuthKeyDirection(String d) {
+		mTlsAuthKeyDirection = d;
+	}
 
-    public void setExtra(String extra) {
-        mExtra = extra;
-    }
+	public String getTlsAuthKeyDirection() {
+		return mTlsAuthKeyDirection;
+	}
 
-    public String getExtra() {
-        return mExtra;
-    }
+	public void setExtra(String extra) {
+		mExtra = extra;
+	}
 
-    @Override
-    protected void readFromParcel(Parcel in) {
-        super.readFromParcel(in);
-        mPort = in.readInt();
-        mProto = in.readString();
-        mUserAuth = in.readInt() == 1;
-        mCert = in.readString();
-        mUseCompLzo = in.readInt() == 1;
-        mRedirectGateway = in.readInt() == 1;
-        mSupplyAddr = in.readInt() == 1;
-        mLocalAddr = in.readString();
-        mRemoteAddr = in.readString();
-        mCipher = in.readString();
-        mKeySize = in.readInt();
-        mExtra = in.readString();
-        mUseTlsAuth = in.readInt() == 1;
-        mTlsAuthKey = in.readString();
-        mTlsAuthKeyDirection = in.readString();
-    }
+	public String getExtra() {
+		return mExtra;
+	}
 
-    @Override
-    public void writeToParcel(Parcel parcel, int flags) {
-        super.writeToParcel(parcel, flags);
-        parcel.writeInt(mPort);
-        parcel.writeString(mProto);
-        parcel.writeInt(mUserAuth ? 1 : 0);
-        parcel.writeString(mCert);
-        parcel.writeInt(mUseCompLzo ? 1 : 0);
-        parcel.writeInt(mRedirectGateway ? 1 : 0);
-        parcel.writeInt(mSupplyAddr ? 1 : 0);
-        parcel.writeString(mLocalAddr);
-        parcel.writeString(mRemoteAddr);
-        parcel.writeString(mCipher);
-        parcel.writeInt(mKeySize);
-        parcel.writeString(mExtra);
-        parcel.writeInt(mUseTlsAuth ? 1 : 0);
-        parcel.writeString(mTlsAuthKey);
-        parcel.writeString(mTlsAuthKeyDirection);
-    }
+	@Override
+	protected void readFromParcel(Parcel in) {
+		super.readFromParcel(in);
+		mPort = in.readInt();
+		mProto = in.readString();
+		mUserAuth = in.readInt() == 1;
+		// mCert = in.readString();
+		mUserCert = in.readString();
+		mUseCompLzo = in.readInt() == 1;
+		mRedirectGateway = in.readInt() == 1;
+		mSupplyAddr = in.readInt() == 1;
+		mLocalAddr = in.readString();
+		mRemoteAddr = in.readString();
+		mCipher = in.readString();
+		mKeySize = in.readInt();
+		mExtra = in.readString();
+		mUseTlsAuth = in.readInt() == 1;
+		mTlsAuthKey = in.readString();
+		mTlsAuthKeyDirection = in.readString();
+	}
+
+	@Override
+	public void writeToParcel(Parcel parcel, int flags) {
+		super.writeToParcel(parcel, flags);
+		parcel.writeInt(mPort);
+		parcel.writeString(mProto);
+		parcel.writeInt(mUserAuth ? 1 : 0);
+		// parcel.writeString(mCert);
+		parcel.writeString(mUserCert);
+		parcel.writeInt(mUseCompLzo ? 1 : 0);
+		parcel.writeInt(mRedirectGateway ? 1 : 0);
+		parcel.writeInt(mSupplyAddr ? 1 : 0);
+		parcel.writeString(mLocalAddr);
+		parcel.writeString(mRemoteAddr);
+		parcel.writeString(mCipher);
+		parcel.writeInt(mKeySize);
+		parcel.writeString(mExtra);
+		parcel.writeInt(mUseTlsAuth ? 1 : 0);
+		parcel.writeString(mTlsAuthKey);
+		parcel.writeString(mTlsAuthKeyDirection);
+	}
 }

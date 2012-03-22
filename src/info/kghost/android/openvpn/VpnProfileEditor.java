@@ -39,7 +39,6 @@ class VpnProfileEditor {
 
     private EditTextPreference mName;
     private EditTextPreference mServerName;
-    private EditTextPreference mDomainSuffices;
     private VpnProfile mProfile;
 
     public VpnProfileEditor(VpnProfile p) {
@@ -73,7 +72,6 @@ class VpnProfileEditor {
 
         subpanel.addPreference(createServerNamePreference(c));
         loadExtraPreferencesTo(subpanel);
-        subpanel.addPreference(createDomainSufficesPreference(c));
     }
 
     /**
@@ -105,27 +103,6 @@ class VpnProfileEditor {
         return ((result != null)
                 ? result
                 : validate(mServerName, R.string.vpn_a_vpn_server));
-    }
-
-    /**
-     * Creates a preference for users to input domain suffices.
-     */
-    protected EditTextPreference createDomainSufficesPreference(Context c) {
-        EditTextPreference pref = mDomainSuffices = createEditTextPreference(c,
-                R.string.vpn_dns_search_list_title,
-                R.string.vpn_dns_search_list,
-                mProfile.getDomainSuffices(),
-                new Preference.OnPreferenceChangeListener() {
-                    public boolean onPreferenceChange(
-                            Preference pref, Object newValue) {
-                        String v = ((String) newValue).trim();
-                        mProfile.setDomainSuffices(v);
-                        setSummary(pref, R.string.vpn_dns_search_list, v, false);
-                        return true;
-                    }
-                });
-        pref.getEditText().setInputType(InputType.TYPE_TEXT_VARIATION_URI);
-        return pref;
     }
 
     private Preference createServerNamePreference(Context c) {

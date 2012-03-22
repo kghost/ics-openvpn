@@ -16,99 +16,168 @@
 
 package info.kghost.android.openvpn;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 
 import android.content.Intent;
 import android.net.VpnService;
+import android.security.KeyChain;
+import android.util.Log;
 
-public class OpenVpnService extends VpnService {
-	private Thread mThread = new Thread(new Runnable() {
-		@Override
-		public void run() {
+public class OpenVpnService extends VpnService implements Runnable {
+	private Thread mThread = new Thread(this);
+
+	@Override
+	public void run() {
+		if (vpn != null && vpn.isStarted()) {
+			vpn.stop();
+			vpn = null;
+		}
+
+		VpnService.Builder builder = new VpnService.Builder();
+		vpn = new OpenVpn();
+		try {
+			OpenvpnProfile profile = intent.getParcelableExtra(getPackageName()
+					+ ".CONF");
+			ArrayList<String> config = new ArrayList<String>();
+			config.add("--client");
+			config.add("--tls-client");
+
+			config.add("--dev-type");
+			config.add("tun");
+
+			if (profile.getLocalAddr() != null) {
+				config.add("--local");
+				config.add(profile.getLocalAddr());
+			} else {
+				config.add("--nobind");
+			}
+
+			config.add("--ns-cert-type");
+			config.add("server");
+
+			config.add("--proto");
+			config.add(profile.getProto());
+
+			config.add("--remote");
+			config.add(profile.getServerName());
+			config.add(profile.getPort());
+
+			if (profile.getUseCompLzo())
+				config.add("--comp-lzo");
+
+			if (profile.getCipher() != null) {
+				config.add("--cipher");
+				config.add(profile.getCipher());
+			}
+
+			if (!profile.getKeySize().equals("0")) {
+				config.add("--keysize");
+				config.add(profile.getKeySize());
+			}
+
+			try {
+				PrivateKey pk = KeyChain.getPrivateKey(OpenVpnService.this,
+						profile.getUserCertName());
+				X509Certificate[] chain = KeyChain.getCertificateChain(
+						OpenVpnService.this, profile.getUserCertName());
+
+				KeyStore pkcs12Store = KeyStore.getInstance("PKCS12");
+				pkcs12Store.load(null, null);
+				pkcs12Store.setKeyEntry("cert", pk, null, chain);
+				File tmp = new File(OpenVpnService.this.getCacheDir(),
+						"tmp.pfx");
+				FileOutputStream f = new FileOutputStream(tmp);
+				pkcs12Store.store(f, "".toCharArray());
+				f.close();
+
+				config.add("--pkcs12");
+				config.add(tmp.getAbsolutePath());
+			} catch (Exception e) {
+				Log.w(OpenVpnService.class.getName(), "Error generate pkcs12",
+						e);
+			}
+
+			vpn.start(config.toArray(new String[0]));
+
+			ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
+			while (!stop) {
+				try {
+					buffer.position(0);
+					buffer.limit(0);
+					FileDescriptorHolder fd = new FileDescriptorHolder();
+					if (vpn.recv(buffer, fd) <= 0) {
+						stop = true;
+						break;
+					}
+					switch (buffer.get()) {
+					case 'T': {
+						if (!fd.valid())
+							throw new RuntimeException(
+									"remote fd not valid !!!");
+						OpenVpnService.this.protect(fd.get());
+						fd.close();
+						FileDescriptorHolder tun = new FileDescriptorHolder(
+								builder.establish().detachFd());
+
+						buffer.clear();
+						buffer.put((byte) 0x74); // 't'
+						buffer.flip();
+						vpn.send(buffer, tun);
+						tun.close();
+						break;
+					}
+					case 'R': {
+						byte[] ip = new byte[4];
+						buffer.get(ip);
+						int mask = buffer.getInt();
+						builder.addRoute(InetAddress.getByAddress(ip), mask);
+						break;
+					}
+					case 'A': {
+						byte[] ip = new byte[4];
+						buffer.get(ip);
+						int mask = buffer.getInt();
+						builder.addAddress(InetAddress.getByAddress(ip), mask);
+						break;
+					}
+					case 'D': {
+						byte[] ip = new byte[4];
+						buffer.get(ip);
+						builder.addDnsServer(InetAddress.getByAddress(ip));
+						break;
+					}
+					case 'M': {
+						int mtu = buffer.getInt();
+						builder.setMtu(mtu);
+						break;
+					}
+					}
+				} catch (InterruptedException e) {
+					stop = true;
+					break;
+				}
+			}
+
 			if (vpn != null && vpn.isStarted()) {
 				vpn.stop();
 				vpn = null;
 			}
-
-			VpnService.Builder builder = new VpnService.Builder();
-			vpn = new OpenVpn();
-			try {
-				String[] config = { "--config", "/sdcard/openvpn/test.conf", };
-				vpn.start(config);
-
-				ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
-				while (!stop) {
-					try {
-						buffer.position(0);
-						buffer.limit(0);
-						FileDescriptorHolder fd = new FileDescriptorHolder();
-						if (vpn.recv(buffer, fd) <= 0) {
-							stop = true;
-							break;
-						}
-						switch (buffer.get()) {
-						case 'T': {
-							if (!fd.valid())
-								throw new RuntimeException(
-										"remote fd not valid !!!");
-							OpenVpnService.this.protect(fd.get());
-							fd.close();
-							FileDescriptorHolder tun = new FileDescriptorHolder(
-									builder.establish().detachFd());
-
-							buffer.clear();
-							buffer.put((byte) 0x74); // 't'
-							buffer.flip();
-							vpn.send(buffer, tun);
-							tun.close();
-							break;
-						}
-						case 'R': {
-							byte[] ip = new byte[4];
-							buffer.get(ip);
-							int mask = buffer.getInt();
-							builder.addRoute(InetAddress.getByAddress(ip), mask);
-							break;
-						}
-						case 'A': {
-							byte[] ip = new byte[4];
-							buffer.get(ip);
-							int mask = buffer.getInt();
-							builder.addAddress(InetAddress.getByAddress(ip),
-									mask);
-							break;
-						}
-						case 'D': {
-							byte[] ip = new byte[4];
-							buffer.get(ip);
-							builder.addDnsServer(InetAddress.getByAddress(ip));
-							break;
-						}
-						case 'M': {
-							int mtu = buffer.getInt();
-							builder.setMtu(mtu);
-							break;
-						}
-						}
-					} catch (InterruptedException e) {
-						stop = true;
-						break;
-					}
-				}
-
-				if (vpn != null && vpn.isStarted()) {
-					vpn.stop();
-					vpn = null;
-				}
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-
+			this.stopSelf();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
-	});
+	}
+
 	private boolean stop = false;
+	private Intent intent = null;
 	private OpenVpn vpn;
 
 	static {
@@ -117,6 +186,7 @@ public class OpenVpnService extends VpnService {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		this.intent = intent;
 		if (mThread.isAlive()) {
 			return START_STICKY;
 		} else {
@@ -128,13 +198,16 @@ public class OpenVpnService extends VpnService {
 	@Override
 	public void onDestroy() {
 		stop = true;
+		if (vpn != null) {
+			vpn.stop();
+			vpn = null;
+		}
 		mThread.interrupt();
-		vpn.stop();
-		vpn = null;
 		try {
 			mThread.join();
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
+		intent = null;
 	}
 }
