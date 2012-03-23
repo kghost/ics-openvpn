@@ -101,6 +101,8 @@ public class VpnSettings extends PreferenceActivity implements
 
 	private Dialog mShowingDialog;
 
+	private VpnProfile mConnectingProfile;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -193,17 +195,23 @@ public class VpnSettings extends PreferenceActivity implements
 	@Override
 	protected void onActivityResult(final int requestCode,
 			final int resultCode, final Intent data) {
-		if ((resultCode == RESULT_CANCELED) || (data == null)) {
-			Log.d(TAG, "no result returned by editor");
-			return;
-		}
-
 		if (requestCode == REQUEST_CONNECT) {
-			Intent intent = new Intent(this, OpenVpnService.class);
-			intent.putExtra(PREFIX + ".CONF",
-					data.getParcelableExtra(PREFIX + ".CONF"));
-			startService(intent);
+			if (mConnectingProfile == null) {
+				Log.w(TAG, "profile is null");
+				return;
+			}
+			if (resultCode == RESULT_OK) {
+				Intent intent = new Intent(this, OpenVpnService.class);
+				intent.putExtra(PREFIX + ".CONF",
+						(Parcelable) mConnectingProfile);
+				startService(intent);
+			}
+			mConnectingProfile = null;
 		} else if (requestCode == REQUEST_ADD_OR_EDIT_PROFILE) {
+			if (resultCode == RESULT_CANCELED || data == null) {
+				Log.d(TAG, "no result returned by editor");
+				return;
+			}
 			VpnProfile p = data.getParcelableExtra(KEY_VPN_PROFILE);
 			if (p == null) {
 				Log.e(TAG, "null object returned by editor");
@@ -416,13 +424,11 @@ public class VpnSettings extends PreferenceActivity implements
 
 	private synchronized void connect(final VpnProfile p) {
 		Intent intent = VpnService.prepare(this);
+		mConnectingProfile = p;
 		if (intent != null) {
-			intent.putExtra(PREFIX + ".CONF", (Parcelable) p);
 			startActivityForResult(intent, REQUEST_CONNECT);
 		} else {
-			intent = new Intent();
-			intent.putExtra(PREFIX + ".CONF", (Parcelable) p);
-			onActivityResult(REQUEST_CONNECT, RESULT_OK, intent);
+			onActivityResult(REQUEST_CONNECT, RESULT_OK, null);
 		}
 	}
 
