@@ -21,8 +21,8 @@
         android:title="@string/vpn_add_new_vpn">
         <!--intent
             android:action="android.intent.action.MAIN"
-            android:targetPackage="com.android.settings.vpn"
-            android:targetClass="com.android.settings.vpn.VpnEditor" /-->
+            android:targetPackage="info.kghost.android.openvpn"
+            android:targetClass="info.kghost.android.openvpn.VpnEditor" /-->
     </PreferenceScreen>
 
     <!--CheckBoxPreference android:key="installer_enabled"

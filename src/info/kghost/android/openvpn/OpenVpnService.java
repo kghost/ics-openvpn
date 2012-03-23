@@ -21,6 +21,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedByInterruptException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -34,78 +36,82 @@ import android.util.Log;
 public class OpenVpnService extends VpnService implements Runnable {
 	private Thread mThread = new Thread(this);
 
+	private String[] prepare(OpenvpnProfile profile) {
+		ArrayList<String> config = new ArrayList<String>();
+		config.add("--client");
+		config.add("--tls-client");
+
+		config.add("--dev-type");
+		config.add("tun");
+
+		if (profile.getLocalAddr() != null) {
+			config.add("--local");
+			config.add(profile.getLocalAddr());
+		} else {
+			config.add("--nobind");
+		}
+
+		config.add("--ns-cert-type");
+		config.add("server");
+
+		config.add("--proto");
+		config.add(profile.getProto());
+
+		config.add("--remote");
+		config.add(profile.getServerName());
+		config.add(profile.getPort());
+
+		if (profile.getUseCompLzo())
+			config.add("--comp-lzo");
+
+		if (profile.getCipher() != null) {
+			config.add("--cipher");
+			config.add(profile.getCipher());
+		}
+
+		if (!profile.getKeySize().equals("0")) {
+			config.add("--keysize");
+			config.add(profile.getKeySize());
+		}
+
+		try {
+			PrivateKey pk = KeyChain.getPrivateKey(OpenVpnService.this,
+					profile.getUserCertName());
+			X509Certificate[] chain = KeyChain.getCertificateChain(
+					OpenVpnService.this, profile.getUserCertName());
+
+			KeyStore pkcs12Store = KeyStore.getInstance("PKCS12");
+			pkcs12Store.load(null, null);
+			pkcs12Store.setKeyEntry("cert", pk, null, chain);
+			File tmp = new File(OpenVpnService.this.getCacheDir(), "tmp.pfx");
+			FileOutputStream f = new FileOutputStream(tmp);
+			pkcs12Store.store(f, "".toCharArray());
+			f.close();
+
+			config.add("--pkcs12");
+			config.add(tmp.getAbsolutePath());
+		} catch (Exception e) {
+			Log.w(OpenVpnService.class.getName(), "Error generate pkcs12", e);
+		}
+
+		return config.toArray(new String[0]);
+	}
+
 	@Override
 	public void run() {
-		if (vpn != null && vpn.isStarted()) {
-			vpn.stop();
+		if (vpn != null) {
+			if (vpn.isStarted())
+				vpn.stop();
 			vpn = null;
 		}
 
-		VpnService.Builder builder = new VpnService.Builder();
-		vpn = new OpenVpn();
 		try {
+			VpnService.Builder builder = new VpnService.Builder();
+			vpn = new OpenVpn();
 			OpenvpnProfile profile = intent.getParcelableExtra(getPackageName()
 					+ ".CONF");
-			ArrayList<String> config = new ArrayList<String>();
-			config.add("--client");
-			config.add("--tls-client");
 
-			config.add("--dev-type");
-			config.add("tun");
-
-			if (profile.getLocalAddr() != null) {
-				config.add("--local");
-				config.add(profile.getLocalAddr());
-			} else {
-				config.add("--nobind");
-			}
-
-			config.add("--ns-cert-type");
-			config.add("server");
-
-			config.add("--proto");
-			config.add(profile.getProto());
-
-			config.add("--remote");
-			config.add(profile.getServerName());
-			config.add(profile.getPort());
-
-			if (profile.getUseCompLzo())
-				config.add("--comp-lzo");
-
-			if (profile.getCipher() != null) {
-				config.add("--cipher");
-				config.add(profile.getCipher());
-			}
-
-			if (!profile.getKeySize().equals("0")) {
-				config.add("--keysize");
-				config.add(profile.getKeySize());
-			}
-
-			try {
-				PrivateKey pk = KeyChain.getPrivateKey(OpenVpnService.this,
-						profile.getUserCertName());
-				X509Certificate[] chain = KeyChain.getCertificateChain(
-						OpenVpnService.this, profile.getUserCertName());
-
-				KeyStore pkcs12Store = KeyStore.getInstance("PKCS12");
-				pkcs12Store.load(null, null);
-				pkcs12Store.setKeyEntry("cert", pk, null, chain);
-				File tmp = new File(OpenVpnService.this.getCacheDir(),
-						"tmp.pfx");
-				FileOutputStream f = new FileOutputStream(tmp);
-				pkcs12Store.store(f, "".toCharArray());
-				f.close();
-
-				config.add("--pkcs12");
-				config.add(tmp.getAbsolutePath());
-			} catch (Exception e) {
-				Log.w(OpenVpnService.class.getName(), "Error generate pkcs12",
-						e);
-			}
-
-			vpn.start(config.toArray(new String[0]));
+			vpn.start(prepare(profile));
 
 			ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
 			while (!stop) {
@@ -163,16 +169,23 @@ public class OpenVpnService extends VpnService implements Runnable {
 				} catch (InterruptedException e) {
 					stop = true;
 					break;
+				} catch (ClosedByInterruptException e) {
+					stop = true;
+					break;
+				} catch (AsynchronousCloseException e) {
+					stop = true;
+					break;
 				}
 			}
-
-			if (vpn != null && vpn.isStarted()) {
-				vpn.stop();
+		} catch (IOException e) {
+			Log.wtf(this.getClass().getName(), e);
+		} finally {
+			if (vpn != null) {
+				if (vpn.isStarted())
+					vpn.stop();
 				vpn = null;
 			}
 			this.stopSelf();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
 	}
 
@@ -199,7 +212,8 @@ public class OpenVpnService extends VpnService implements Runnable {
 	public void onDestroy() {
 		stop = true;
 		if (vpn != null) {
-			vpn.stop();
+			if (vpn.isStarted())
+				vpn.stop();
 			vpn = null;
 		}
 		mThread.interrupt();

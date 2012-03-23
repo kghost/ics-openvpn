@@ -2,6 +2,7 @@ package info.kghost.android.openvpn;
 
 import java.io.IOException;
 import java.nio.Buffer;
+import java.nio.channels.spi.AbstractInterruptibleChannel;
 
 public class OpenVpn {
 
@@ -44,7 +45,10 @@ public class OpenVpn {
 			throw new RuntimeException("Not start");
 		}
 		stop(pid);
-		control.getFd().close();
+		try {
+			control.close();
+		} catch (IOException e) {
+		}
 		pid = -1;
 	}
 
@@ -52,21 +56,24 @@ public class OpenVpn {
 		return pid != -1;
 	}
 
-	private static class ControlChannel {
+	private static class ControlChannel extends AbstractInterruptibleChannel {
 		private FileDescriptorHolder socket;
 
 		private ControlChannel(FileDescriptorHolder socket) {
+			super();
 			this.socket = socket;
-		}
-
-		public FileDescriptorHolder getFd() {
-			return this.socket;
 		}
 
 		public int recv(Buffer data, FileDescriptorHolder fd)
 				throws InterruptedException, IOException {
-			int count = recv(socket, data, data.limit(),
-					data.capacity() - data.limit(), fd);
+			begin();
+			int count = -1;
+			try {
+				count = recv(socket, data, data.limit(),
+						data.capacity() - data.limit(), fd);
+			} finally {
+				end(count >= 0);
+			}
 			if (count > 0) {
 				data.limit(data.limit() + count);
 			}
@@ -74,7 +81,13 @@ public class OpenVpn {
 		}
 
 		public int send(Buffer data) throws InterruptedException, IOException {
-			int count = send(socket, data, data.position(), data.remaining());
+			begin();
+			int count = -1;
+			try {
+				count = send(socket, data, data.position(), data.remaining());
+			} finally {
+				end(count >= 0);
+			}
 			if (count > 0)
 				data.position(data.position() + count);
 			return count;
@@ -82,8 +95,14 @@ public class OpenVpn {
 
 		public int send(Buffer data, FileDescriptorHolder fd)
 				throws InterruptedException, IOException {
-			int count = send(socket, data, data.position(), data.remaining(),
-					fd);
+			begin();
+			int count = -1;
+			try {
+				count = send(socket, data, data.position(), data.remaining(),
+						fd);
+			} finally {
+				end(count >= 0);
+			}
 			if (count > 0)
 				data.position(data.position() + count);
 			return count;
@@ -100,5 +119,10 @@ public class OpenVpn {
 		private static native int send(FileDescriptorHolder socket,
 				Buffer data, int offset, int length, FileDescriptorHolder fd)
 				throws InterruptedException, IOException;
+
+		@Override
+		protected void implCloseChannel() throws IOException {
+			socket.shutdown();
+		}
 	}
 }
