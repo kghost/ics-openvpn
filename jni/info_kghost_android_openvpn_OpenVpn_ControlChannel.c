@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <android/log.h>
+#include <errno.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,15 +96,44 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_00024ControlChan
 (JNIEnv *env, jclass cls, jobject socket, jobject buffer, jint offset, jint length, jobject fd) {
   int s = jniGetFDFromFileDescriptor(env, socket);
   if (s < 0) {
-#warning TODO: raise exception
+    throwError(env, "java/lang/IllegalArgumentException", "socket");
     return -1;
   }
 
   jlong cap = (*env)->GetDirectBufferCapacity(env, buffer);
-  void* ptr = (*env)->GetDirectBufferAddress(env, buffer);
+  char* ptr = (*env)->GetDirectBufferAddress(env, buffer);
   int recvfd = -1;
 
   int result = read_fd(s, ptr+offset, min(cap-offset, length), &recvfd);
+  if (result < 0) {
+    switch (errno) {
+      case EBADF:
+      case ENOTSOCK:
+      case ENOTCONN:
+      case ECONNREFUSED:
+        throwError(env, "java/lang/IllegalArgumentException", "socket");
+        break;
+      case EINVAL:
+        throwError(env, "java/lang/IllegalArgumentException", "inval");
+        break;
+      case EFAULT:
+        throwError(env, "java/lang/IllegalArgumentException", "buffer");
+        break;
+      case EINTR:
+        throwError(env, "java/lang/InterruptedException", "interrupted");
+        break;
+      case ENOMEM:
+        throwError(env, "java/lang/RuntimeException", "oom");
+        break;
+      case EAGAIN:
+        throwError(env, "java/lang/IllegalArgumentException", "non-block socket");
+        break;
+      default:
+        throwError(env, "java/lang/RuntimeException", "unknown error");
+        break;
+    }
+    return result;
+  }
 
   if (recvfd >= 0) {
     jniSetFileDescriptorOfFD(env, fd, recvfd);
@@ -121,14 +151,51 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_00024ControlChan
 (JNIEnv *env, jclass cls, jobject socket, jobject buffer, jint offset, jint length) {
   int s = jniGetFDFromFileDescriptor(env, socket);
   if (s < 0) {
-#warning TODO: raise exception
+    throwError(env, "java/lang/IllegalArgumentException", "socket");
     return -1;
   }
 
   jlong cap = (*env)->GetDirectBufferCapacity(env, buffer);
-  void* ptr = (*env)->GetDirectBufferAddress(env, buffer);
+  char* ptr = (*env)->GetDirectBufferAddress(env, buffer);
 
-  return send(s, ptr+offset, min(cap-offset, length), 0);
+  int result = send(s, ptr+offset, min(cap-offset, length), 0);
+  if (result < 0) {
+    switch (errno) {
+      case EACCES:
+      case EBADF:
+      case ENOTCONN:
+      case ENOTSOCK:
+      case EISCONN:
+      case ECONNRESET:
+      case EDESTADDRREQ:
+        throwError(env, "java/lang/IllegalArgumentException", "socket");
+        break;
+      case EINVAL:
+        throwError(env, "java/lang/IllegalArgumentException", "inval");
+        break;
+      case EFAULT:
+        throwError(env, "java/lang/IllegalArgumentException", "buffer");
+        break;
+      case EMSGSIZE:
+        throwError(env, "java/lang/IllegalArgumentException", "msg size");
+        break;
+      case EINTR:
+        throwError(env, "java/lang/InterruptedException", "interrupted");
+        break;
+      case ENOBUFS:
+      case ENOMEM:
+        throwError(env, "java/lang/RuntimeException", "oom");
+        break;
+      case EAGAIN:
+        throwError(env, "java/lang/IllegalArgumentException", "non-block socket");
+        break;
+      default:
+        throwError(env, "java/lang/RuntimeException", "unknown error");
+        break;
+    }
+  }
+
+  return result;
 }
 
 /*
@@ -140,15 +207,52 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_00024ControlChan
 (JNIEnv *env, jclass cls, jobject socket, jobject buffer, jint offset, jint length, jobject fd) {
   int s = jniGetFDFromFileDescriptor(env, socket);
   if (s < 0) {
-#warning TODO: raise exception
+    throwError(env, "java/lang/IllegalArgumentException", "socket");
     return -1;
   }
 
   jlong cap = (*env)->GetDirectBufferCapacity(env, buffer);
-  void* ptr = (*env)->GetDirectBufferAddress(env, buffer);
+  char* ptr = (*env)->GetDirectBufferAddress(env, buffer);
   int sendfd = jniGetFDFromFileDescriptor(env, fd);
 
-  return write_fd(s, ptr+offset, min(cap-offset, length), sendfd);
+  int result = write_fd(s, ptr+offset, min(cap-offset, length), sendfd);
+  if (result < 0) {
+    switch (errno) {
+      case EACCES:
+      case EBADF:
+      case ENOTCONN:
+      case ENOTSOCK:
+      case EISCONN:
+      case ECONNRESET:
+      case EDESTADDRREQ:
+        throwError(env, "java/lang/IllegalArgumentException", "socket");
+        break;
+      case EINVAL:
+        throwError(env, "java/lang/IllegalArgumentException", "inval");
+        break;
+      case EFAULT:
+        throwError(env, "java/lang/IllegalArgumentException", "buffer");
+        break;
+      case EMSGSIZE:
+        throwError(env, "java/lang/IllegalArgumentException", "msg size");
+        break;
+      case EINTR:
+        throwError(env, "java/lang/InterruptedException", "interrupted");
+        break;
+      case ENOBUFS:
+      case ENOMEM:
+        throwError(env, "java/lang/RuntimeException", "oom");
+        break;
+      case EAGAIN:
+        throwError(env, "java/lang/IllegalArgumentException", "non-block socket");
+        break;
+      default:
+        throwError(env, "java/lang/RuntimeException", "unknown error");
+        break;
+    }
+  }
+
+  return result;
 }
 
 #ifdef __cplusplus

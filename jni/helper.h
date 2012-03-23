@@ -8,6 +8,7 @@ extern "C" {
 
 int jniGetFDFromFileDescriptor(JNIEnv* env, jobject fileDescriptor);
 void jniSetFileDescriptorOfFD(C_JNIEnv* env, jobject fileDescriptor, int value);
+jint throwError(JNIEnv *env, char *className, char *message);
 
 #ifdef __cplusplus
 }

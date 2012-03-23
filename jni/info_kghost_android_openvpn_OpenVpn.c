@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <errno.h>
 
 #ifdef __cplusplus
@@ -22,9 +24,7 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
     int socket[2];
     int result = socketpair(PF_UNIX, SOCK_DGRAM, 0, socket);
     if (result < 0) {
-      // fork error
-#warning TODO: fail check
-      // jniThrowIOException(env, errno);
+      throwError(env, "java/lang/RuntimeException", strerror(errno));
       goto ERROR0;
     }
 
@@ -59,18 +59,15 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
     const int max_fd = rlimit.rlim_max;
 
     result = fork();
-#warning TODO: fail check
-    //  if (result < 0) {
-    //    // fork error
-    //    jniThrowIOException(env, errno);
-    //    closePipes(pipes, -1);
-    //    return -1;
-    //  }
+    if (result < 0) {
+      throwError(env, "java/lang/RuntimeException", strerror(errno));
+      goto ERROR2;
+    }
     if (result == 0) {
       // child
       // DON'T DO ANY MEMORY ALLOC HERE
       // because some other java process may hold the malloc lock
-      // keep these as simple as you can
+      // keep these as simple as possible
       int fd;
       for (fd = 3; fd < max_fd; ++fd) {
         if (fd != socket[1] && fd != androidSystemPropertiesFd) { 
@@ -82,7 +79,6 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
       exit(errno); // unreachable if execvp success
     }
 
-
     // parent
     close(socket[1]);
     jniSetFileDescriptorOfFD(env, control, socket[0]);
@@ -92,6 +88,11 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
     free(array);
     return result;
 
+ERROR2:
+    for (i = 0; i < length; ++i) {
+      (*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, options, i), array[i+3]);
+    }
+    free(array);
 ERROR1:
     close(socket[0]);
     close(socket[1]);

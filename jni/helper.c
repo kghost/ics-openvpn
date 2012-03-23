@@ -12,4 +12,13 @@ void jniSetFileDescriptorOfFD(C_JNIEnv* env, jobject obj, int value) {
   (*env)->SetIntField(env, obj, field, value);
 }
 
+jint throwError(JNIEnv *env, char *className, char *message)
+{
+  jclass exClass = (*env)->FindClass(env, className);
+  if (!exClass)
+  {
+    (*env)->ThrowNew(env, (*env)->FindClass(env, "java/lang/NoClassDefFoundError"), className);
+  }
+  return (*env)->ThrowNew(env, exClass, message);
+}
 

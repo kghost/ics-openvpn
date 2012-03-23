@@ -41,7 +41,7 @@ public class OpenVpn {
 
 	public synchronized void stop() {
 		if (pid == -1) {
-			throw new RuntimeException("Not started");
+			throw new RuntimeException("Not start");
 		}
 		stop(pid);
 		control.getFd().close();
