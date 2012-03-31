@@ -17,12 +17,18 @@ import java.util.Map;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.net.VpnService;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.Parcelable;
+import android.os.RemoteException;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
@@ -33,25 +39,21 @@ import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
 /**
  * The preference activity for configuring VPN settings.
  */
-public class VpnSettings extends PreferenceActivity implements
-		DialogInterface.OnClickListener {
+public class VpnSettings extends PreferenceActivity {
 	// Key to the field exchanged for profile editing.
 	static final String KEY_VPN_PROFILE = "vpn_profile";
-
-	// Key to the field exchanged for VPN type selection.
-	static final String KEY_VPN_TYPE = "vpn_type";
 
 	private static final String TAG = VpnSettings.class.getSimpleName();
 
 	private static final String PREF_ADD_VPN = "add_new_vpn";
 	private static final String PREF_VPN_LIST = "vpn_list";
 
-	private String PREFIX;
 	private File PROFILES_ROOT;
 
 	private static final String PROFILE_OBJ_FILE = ".pobj";
@@ -64,7 +66,6 @@ public class VpnSettings extends PreferenceActivity implements
 	private static final int CONTEXT_MENU_EDIT_ID = ContextMenu.FIRST + 2;
 	private static final int CONTEXT_MENU_DELETE_ID = ContextMenu.FIRST + 3;
 
-	private static final int CONNECT_BUTTON = DialogInterface.BUTTON_POSITIVE;
 	private static final int OK_BUTTON = DialogInterface.BUTTON_POSITIVE;
 
 	private PreferenceScreen mAddVpn;
@@ -74,24 +75,46 @@ public class VpnSettings extends PreferenceActivity implements
 	private Map<String, VpnPreference> mVpnPreferenceMap;
 	private List<VpnProfile> mVpnProfileList;
 
-	// profile engaged in a connection
-	private VpnProfile mActiveProfile;
-
-	// actor engaged in connecting
-	private VpnProfileActor mConnectingActor;
-
-	// states saved for unlocking keystore
-	private Runnable mUnlockAction;
-
 	private Dialog mShowingDialog;
 
 	private VpnProfile mConnectingProfile;
+
+	private VpnStatus mStatus;
+	private IVpnService mIVpnService;
+	private ServiceConnection mConnection = new ServiceConnection() {
+		@Override
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			mIVpnService = IVpnService.Stub.asInterface(service);
+			try {
+				mStatus = mIVpnService.checkStatus();
+				updatePreferenceList();
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName name) {
+			mIVpnService = null;
+		}
+	};
+
+	private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			VpnStatus s = intent.getParcelableExtra("connection_state");
+			if (s != null) {
+				mStatus = s;
+				updatePreferenceList();
+			}
+		}
+	};
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		PREFIX = getPackageName();
 		PROFILES_ROOT = this.getFilesDir();
 
 		addPreferencesFromResource(R.xml.vpn_settings);
@@ -115,14 +138,23 @@ public class VpnSettings extends PreferenceActivity implements
 	}
 
 	@Override
-	public void onResume() {
+	protected void onStart() {
 		super.onResume();
+		updatePreferenceList();
 
-		if (mUnlockAction != null) {
-			Runnable action = mUnlockAction;
-			mUnlockAction = null;
-			runOnUiThread(action);
-		}
+		IntentFilter filter = new IntentFilter();
+		filter.addAction("info.kghost.android.openvpn.connectivity");
+		registerReceiver(mReceiver, filter);
+
+		bindService(new Intent(this, OpenVpnService.class), mConnection,
+				Context.BIND_AUTO_CREATE);
+	}
+
+	@Override
+	protected void onStop() {
+		unbindService(mConnection);
+		unregisterReceiver(mReceiver);
+		super.onPause();
 	}
 
 	@Override
@@ -144,7 +176,9 @@ public class VpnSettings extends PreferenceActivity implements
 			menu.setHeaderTitle(p.getName());
 
 			menu.add(0, CONTEXT_MENU_CONNECT_ID, 0, R.string.vpn_menu_connect)
-					.setEnabled(mActiveProfile == null);
+					.setEnabled(canConnect());
+			menu.add(0, CONTEXT_MENU_DISCONNECT_ID, 0,
+					R.string.vpn_menu_disconnect).setEnabled(canDisconnect(p));
 			menu.add(0, CONTEXT_MENU_EDIT_ID, 0, R.string.vpn_menu_edit)
 					.setEnabled(true);
 			menu.add(0, CONTEXT_MENU_DELETE_ID, 0, R.string.vpn_menu_delete)
@@ -160,8 +194,11 @@ public class VpnSettings extends PreferenceActivity implements
 
 		switch (item.getItemId()) {
 		case CONTEXT_MENU_CONNECT_ID:
-		case CONTEXT_MENU_DISCONNECT_ID:
 			connect(p);
+			return true;
+
+		case CONTEXT_MENU_DISCONNECT_ID:
+			disconnect();
 			return true;
 
 		case CONTEXT_MENU_EDIT_ID:
@@ -185,10 +222,16 @@ public class VpnSettings extends PreferenceActivity implements
 				return;
 			}
 			if (resultCode == RESULT_OK) {
-				Intent intent = new Intent(this, OpenVpnService.class);
-				intent.putExtra(PREFIX + ".CONF",
-						(Parcelable) mConnectingProfile);
-				startService(intent);
+				if (mIVpnService != null)
+					try {
+						mIVpnService.connect(mConnectingProfile);
+					} catch (RemoteException e) {
+						Toast.makeText(this, e.getLocalizedMessage(),
+								Toast.LENGTH_LONG);
+					}
+				else
+					Toast.makeText(this, "Havn't bound to vpn service",
+							Toast.LENGTH_LONG);
 			}
 			mConnectingProfile = null;
 		} else if (requestCode == REQUEST_ADD_OR_EDIT_PROFILE) {
@@ -240,31 +283,77 @@ public class VpnSettings extends PreferenceActivity implements
 		}
 	}
 
-	// Called when the buttons on the connect dialog are clicked.
-	// @Override
-	public synchronized void onClick(DialogInterface dialog, int which) {
-		if (which == CONNECT_BUTTON) {
-			Dialog d = (Dialog) dialog;
-			String error = mConnectingActor.validateInputs(d);
-			if (error == null) {
-				mConnectingActor.connect(d);
+	private boolean canConnect() {
+		if (mStatus == null)
+			return false;
+		switch (mStatus.state) {
+		case IDLE:
+			return true;
+		case PREPARING:
+		case CONNECTING:
+		case DISCONNECTING:
+		case CANCELLED:
+		case CONNECTED:
+		case UNUSABLE:
+		case UNKNOWN:
+			return false;
+		default:
+			return false;
+		}
+	}
+
+	private boolean canDisconnect(VpnProfile p) {
+		if (mStatus == null)
+			return false;
+		switch (mStatus.state) {
+		case CONNECTING:
+		case CONNECTED:
+			return mStatus.name.equals(p.getName());
+		case PREPARING:
+		case IDLE:
+		case DISCONNECTING:
+		case CANCELLED:
+		case UNUSABLE:
+		case UNKNOWN:
+			return false;
+		default:
+			return false;
+		}
+	}
+
+	private void updatePreferenceList() {
+		if (mStatus == null) {
+			for (VpnSettings.VpnPreference pref : mVpnPreferenceMap.values()) {
+				pref.setEnabled(false);
+			}
+			return;
+		} else {
+			switch (mStatus.state) {
+			case IDLE:
+				for (VpnSettings.VpnPreference pref : mVpnPreferenceMap
+						.values()) {
+					pref.setEnabled(true);
+				}
 				return;
-			} else {
-				// show error dialog
-				mShowingDialog = new AlertDialog.Builder(this)
-						.setTitle(android.R.string.dialog_alert_title)
-						.setIcon(android.R.drawable.ic_dialog_alert)
-						.setMessage(
-								String.format(
-										getString(R.string.vpn_error_miss_entering),
-										error))
-						.setPositiveButton(R.string.vpn_back_button,
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog,
-											int which) {
-									}
-								}).create();
-				mShowingDialog.show();
+			case CONNECTING:
+			case CONNECTED:
+				for (Map.Entry<String, VpnSettings.VpnPreference> pref : mVpnPreferenceMap
+						.entrySet()) {
+					pref.getValue().setEnabled(
+							mStatus.name.equals(pref.getKey()));
+				}
+				return;
+			case PREPARING:
+			case DISCONNECTING:
+			case CANCELLED:
+			case UNUSABLE:
+			case UNKNOWN:
+			default:
+				for (VpnSettings.VpnPreference pref : mVpnPreferenceMap
+						.values()) {
+					pref.setEnabled(false);
+				}
+				return;
 			}
 		}
 	}
@@ -357,23 +446,20 @@ public class VpnSettings extends PreferenceActivity implements
 		addPreferenceFor(p);
 	}
 
-	private VpnPreference addPreferenceFor(VpnProfile p) {
-		return addPreferenceFor(p, true);
-	}
-
 	// Adds a preference in mVpnListContainer
-	private VpnPreference addPreferenceFor(VpnProfile p, boolean addToContainer) {
+	private VpnPreference addPreferenceFor(VpnProfile p) {
 		VpnPreference pref = new VpnPreference(this, p);
 		mVpnPreferenceMap.put(p.getName(), pref);
-		if (addToContainer)
-			mVpnListContainer.addPreference(pref);
+		mVpnListContainer.addPreference(pref);
 
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			public boolean onPreferenceClick(Preference pref) {
-				connect(((VpnPreference) pref).mProfile);
+				connectOrDisconnect(((VpnPreference) pref).mProfile);
 				return true;
 			}
 		});
+
+		pref.setEnabled(false);
 		return pref;
 	}
 
@@ -414,6 +500,25 @@ public class VpnSettings extends PreferenceActivity implements
 		} else {
 			onActivityResult(REQUEST_CONNECT, RESULT_OK, null);
 		}
+	}
+
+	private synchronized void disconnect() {
+		if (mIVpnService != null)
+			try {
+				mIVpnService.disconnect();
+			} catch (RemoteException e) {
+				Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG);
+			}
+		else
+			Toast.makeText(this, "Havn't bound to vpn service",
+					Toast.LENGTH_LONG);
+	}
+
+	private synchronized void connectOrDisconnect(final VpnProfile p) {
+		if (mStatus != null && mStatus.state == VpnStatus.VpnState.IDLE)
+			connect(p);
+		else
+			disconnect();
 	}
 
 	private File getProfileDir(VpnProfile p) {
@@ -473,7 +578,7 @@ public class VpnSettings extends PreferenceActivity implements
 			}
 		});
 		for (VpnProfile p : mVpnProfileList) {
-			addPreferenceFor(p, true);
+			addPreferenceFor(p);
 		}
 	}
 
