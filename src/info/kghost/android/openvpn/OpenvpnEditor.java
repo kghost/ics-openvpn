@@ -1,5 +1,18 @@
 package info.kghost.android.openvpn;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+
+import org.spongycastle.openssl.PEMReader;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -9,20 +22,22 @@ import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceGroup;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 /**
  * The class for editing {@link OpenvpnProfile}.
  */
 class OpenvpnEditor extends VpnProfileEditor {
-
 	private static final String KEY_PROFILE = "openvpn_profile";
 
+	private static final int FILE_SELECT_CODE = 0;
 	private static final int REQUEST_ADVANCED = 1;
 
 	private static final String TAG = OpenvpnEditor.class.getSimpleName();
@@ -31,7 +46,7 @@ class OpenvpnEditor extends VpnProfileEditor {
 
 	private CheckBoxPreference mUserAuth;
 
-	// private ListPreference mCert;
+	private CertChoosePreference mCert;
 	private Preference mUserCert;
 
 	public OpenvpnEditor(OpenvpnProfile p) {
@@ -53,8 +68,48 @@ class OpenvpnEditor extends VpnProfileEditor {
 		protected abstract void run(T o);
 	}
 
+	private class FileChooseClickListener implements OnPreferenceClickListener {
+		final private Activity mActivity;
+
+		public FileChooseClickListener(Activity activity) {
+			mActivity = activity;
+		}
+
+		@Override
+		public boolean onPreferenceClick(Preference preference) {
+			Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+			intent.setType("*/*");
+			intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+			try {
+				mActivity
+						.startActivityForResult(Intent.createChooser(intent,
+								"Select certification file"), FILE_SELECT_CODE);
+			} catch (android.content.ActivityNotFoundException ex) {
+				// Potentially direct the user to the Market with a Dialog
+				Toast.makeText(mActivity, "Please install a File Manager.",
+						Toast.LENGTH_SHORT).show();
+			}
+			return false;
+		}
+	}
+
+	private Certificate parseCert(byte[] cert) {
+		try {
+			KeyStore ks = KeyStore.getInstance("BKS");
+			ks.load(new ByteArrayInputStream(cert), null);
+			return (Certificate) ks.getCertificate("c");
+		} catch (NoSuchAlgorithmException e) {
+		} catch (CertificateException e) {
+		} catch (IOException e) {
+		} catch (KeyStoreException e) {
+		}
+		return null;
+	}
+
 	@Override
-	protected void loadExtraPreferencesTo(PreferenceGroup subpanel) {
+	protected void loadExtraPreferencesTo(Activity activity,
+			PreferenceGroup subpanel) {
 		final Context c = subpanel.getContext();
 		final OpenvpnProfile profile = (OpenvpnProfile) getProfile();
 		mUserAuth = new CheckBoxPreference(c);
@@ -73,51 +128,55 @@ class OpenvpnEditor extends VpnProfileEditor {
 				});
 		subpanel.addPreference(mUserAuth);
 
-		// mCert = new ListPreference(c);
-		// mCert.setTitle(R.string.vpn_ca_certificate);
-		// if (profile.getCertName() == null) {
-		// mCert.setSummary(R.string.vpn_ca_certificate_title);
-		// } else {
-		// mCert.setSummary(profile.getCertName());
-		// }
-		//
-		// try {
-		// KeyStore ks = KeyStore.getInstance("AndroidCAStore");
-		// ks.load(null, null);
-		// String[] s = new String[ks.size()];
-		// Enumeration<String> aliases = ks.aliases();
-		// for (int i = 0; i < s.length; ++i) {
-		// s[i] = aliases.nextElement();
-		// }
-		//
-		// mCert.setEntryValues(s);
-		// } catch (KeyStoreException e) {
-		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
-		// } catch (NoSuchAlgorithmException e) {
-		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
-		// } catch (CertificateException e) {
-		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
-		// } catch (IOException e) {
-		// Toast.makeText(c, e.getLocalizedMessage(), Toast.LENGTH_LONG);
-		// }
-		// mCert.setOnPreferenceChangeListener(new
-		// Preference.OnPreferenceChangeListener() {
-		// @Override
-		// public boolean onPreferenceChange(Preference pref, Object newValue) {
-		// String alias = (String) newValue;
-		// profile.setCertName(alias);
-		// ((Activity) c).runOnUiThread(new RunnableEx<String>(alias) {
-		// @Override
-		// public void run(String alias) {
-		// mCert.setSummary(alias);
-		// }
-		// });
-		// return true;
-		// }
-		// });
-		// subpanel.addPreference(mCert);
+		mCert = new CertChoosePreference(c);
+		mCert.setTitle(R.string.vpn_ca_certificate);
+		if (profile.getCertName() != null) {
+			Certificate cert = parseCert(profile.getCertName());
+			if (cert != null)
+				mCert.setSummary(cert.toString());
+		} else {
+			mCert.setSummary(R.string.vpn_ca_certificate_title);
+		}
+		mCert.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+			@Override
+			public boolean onPreferenceChange(Preference pref, Object newValue) {
+				Certificate cert = (Certificate) newValue;
 
-		mUserCert = new CertChoosePreference(c);
+				try {
+					KeyStore ks = KeyStore.getInstance("BKS");
+					ks.load(null, null);
+					ks.setCertificateEntry("c", cert);
+					ByteArrayOutputStream out = new ByteArrayOutputStream();
+					ks.store(out, null);
+					profile.setCertName(out.toByteArray());
+					((Activity) c).runOnUiThread(new RunnableEx<String>(cert
+							.toString()) {
+						@Override
+						public void run(String cert) {
+							mCert.setSummary(cert);
+						}
+					});
+				} catch (KeyStoreException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (NoSuchAlgorithmException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (CertificateException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				return true;
+			}
+		});
+		mCert.setOnPreferenceClickListener(new FileChooseClickListener(activity));
+		subpanel.addPreference(mCert);
+
+		mUserCert = new KeyChoosePreference(c);
 		mUserCert.setTitle(R.string.vpn_user_certificate);
 		if (profile.getUserCertName() == null) {
 			mUserCert.setSummary(R.string.vpn_user_certificate_title);
@@ -182,29 +241,43 @@ class OpenvpnEditor extends VpnProfileEditor {
 	@Override
 	protected void onActivityResult(final int requestCode,
 			final int resultCode, final Intent data) {
-		if (requestCode != REQUEST_ADVANCED)
-			return;
+		if (requestCode == FILE_SELECT_CODE) {
+			String path = data.getData().getPath();
 
-		OpenvpnProfile p = (OpenvpnProfile) getProfile();
-		OpenvpnProfile newP = data.getParcelableExtra(KEY_PROFILE);
-		if (newP == null) {
-			Log.e(TAG, "no profile from advanced settings");
-			return;
+			try {
+				PEMReader r = new PEMReader(new FileReader(path));
+				try {
+					Certificate k = (Certificate) r.readObject();
+					if (k != null)
+						mCert.change(k);
+				} finally {
+					r.close();
+				}
+			} catch (FileNotFoundException e1) {
+			} catch (IOException e) {
+			}
+		} else if (requestCode == REQUEST_ADVANCED) {
+			OpenvpnProfile p = (OpenvpnProfile) getProfile();
+			OpenvpnProfile newP = data.getParcelableExtra(KEY_PROFILE);
+			if (newP == null) {
+				Log.e(TAG, "no profile from advanced settings");
+				return;
+			}
+			// manually copy across all advanced settings
+			p.setPort(newP.getPort());
+			p.setProto(newP.getProto());
+			p.setUseCompLzo(newP.getUseCompLzo());
+			p.setRedirectGateway(newP.getRedirectGateway());
+			p.setSupplyAddr(newP.getSupplyAddr());
+			p.setLocalAddr(newP.getLocalAddr());
+			p.setRemoteAddr(newP.getRemoteAddr());
+			p.setCipher(newP.getCipher());
+			p.setKeySize(newP.getKeySize());
+			p.setExtra(newP.getExtra());
+			p.setUseTlsAuth(newP.getUseTlsAuth());
+			p.setTlsAuthKey(newP.getTlsAuthKey());
+			p.setTlsAuthKeyDirection(newP.getTlsAuthKeyDirection());
 		}
-		// manually copy across all advanced settings
-		p.setPort(newP.getPort());
-		p.setProto(newP.getProto());
-		p.setUseCompLzo(newP.getUseCompLzo());
-		p.setRedirectGateway(newP.getRedirectGateway());
-		p.setSupplyAddr(newP.getSupplyAddr());
-		p.setLocalAddr(newP.getLocalAddr());
-		p.setRemoteAddr(newP.getRemoteAddr());
-		p.setCipher(newP.getCipher());
-		p.setKeySize(newP.getKeySize());
-		p.setExtra(newP.getExtra());
-		p.setUseTlsAuth(newP.getUseTlsAuth());
-		p.setTlsAuthKey(newP.getTlsAuthKey());
-		p.setTlsAuthKeyDirection(newP.getTlsAuthKeyDirection());
 	}
 
 	public static class AdvancedSettings extends PreferenceActivity {

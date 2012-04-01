@@ -1,6 +1,6 @@
 package info.kghost.android.openvpn;
 
-import info.kghost.android.openvpn.R;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.preference.CheckBoxPreference;
@@ -38,7 +38,7 @@ class VpnProfileEditor {
      * Adds the preferences to the panel. Subclasses should override
      * {@link #loadExtraPreferencesTo(PreferenceGroup)} instead of this method.
      */
-    public void loadPreferencesTo(PreferenceGroup subpanel) {
+    public void loadPreferencesTo(Activity activity, PreferenceGroup subpanel) {
         Context c = subpanel.getContext();
 
         mName = (EditTextPreference) subpanel.findPreference(KEY_VPN_NAME);
@@ -55,14 +55,14 @@ class VpnProfileEditor {
                 | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
 
         subpanel.addPreference(createServerNamePreference(c));
-        loadExtraPreferencesTo(subpanel);
+		loadExtraPreferencesTo(activity, subpanel);
     }
 
     /**
      * Adds the extra preferences to the panel. Subclasses should add
      * additional preferences in this method.
      */
-    protected void loadExtraPreferencesTo(PreferenceGroup subpanel) {
+    protected void loadExtraPreferencesTo(Activity activity, PreferenceGroup subpanel) {
     }
 
     protected void onCreateOptionsMenu(Menu menu, int last_item) {

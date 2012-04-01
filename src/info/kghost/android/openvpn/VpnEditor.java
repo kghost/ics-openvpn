@@ -113,7 +113,7 @@ public class VpnEditor extends PreferenceActivity {
 
     private void initViewFor(VpnProfile profile) {
         setTitle(profile);
-        mProfileEditor.loadPreferencesTo(getPreferenceScreen());
+        mProfileEditor.loadPreferencesTo(this, getPreferenceScreen());
     }
 
     private void setTitle(VpnProfile profile) {

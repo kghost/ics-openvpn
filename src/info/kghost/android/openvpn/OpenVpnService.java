@@ -2,6 +2,7 @@ package info.kghost.android.openvpn;
 
 import info.kghost.android.openvpn.VpnStatus.VpnState;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedByInterruptException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 
@@ -68,14 +70,25 @@ public class OpenVpnService extends VpnService {
 			}
 
 			try {
+				KeyStore pkcs12Store = KeyStore.getInstance("PKCS12");
+				pkcs12Store.load(null, null);
+
 				PrivateKey pk = KeyChain.getPrivateKey(OpenVpnService.this,
 						profile.getUserCertName());
 				X509Certificate[] chain = KeyChain.getCertificateChain(
 						OpenVpnService.this, profile.getUserCertName());
+				pkcs12Store.setKeyEntry("key", pk, null, chain);
 
-				KeyStore pkcs12Store = KeyStore.getInstance("PKCS12");
-				pkcs12Store.load(null, null);
-				pkcs12Store.setKeyEntry("cert", pk, null, chain);
+				if (profile.getCertName() != null) {
+					KeyStore localTrustStore = KeyStore.getInstance("BKS");
+					localTrustStore.load(
+							new ByteArrayInputStream(profile.getCertName()),
+							null);
+					Certificate root = localTrustStore.getCertificate("c");
+					if (root != null)
+						pkcs12Store.setCertificateEntry("root", root);
+				}
+
 				File tmp = new File(OpenVpnService.this.getCacheDir(),
 						"tmp.pfx");
 				FileOutputStream f = new FileOutputStream(tmp);

@@ -15,7 +15,7 @@ public class OpenvpnProfile extends VpnProfile {
 	// Standard Settings
 	private boolean mUserAuth = false;
 
-	// private String mCert;
+	private byte[] mCert;
 	private String mUserCert;
 
 	// Advanced Settings
@@ -83,13 +83,15 @@ public class OpenvpnProfile extends VpnProfile {
 		mUserAuth = auth;
 	}
 
-	// public String getCertName() {
-	// return mCert;
-	// }
-	//
-	// public void setCertName(String name) {
-	// mCert = name;
-	// }
+	public byte[] getCertName() {
+		if (mCert != null && mCert.length == 0)
+			return null;
+		return mCert;
+	}
+
+	public void setCertName(byte[] name) {
+		mCert = name;
+	}
 
 	public String getUserCertName() {
 		return mUserCert;
@@ -200,7 +202,8 @@ public class OpenvpnProfile extends VpnProfile {
 		mPort = in.readInt();
 		mProto = in.readString();
 		mUserAuth = in.readInt() == 1;
-		// mCert = in.readString();
+		mCert = new byte[in.readInt()];
+		in.readByteArray(mCert);
 		mUserCert = in.readString();
 		mUseCompLzo = in.readInt() == 1;
 		mRedirectGateway = in.readInt() == 1;
@@ -221,7 +224,13 @@ public class OpenvpnProfile extends VpnProfile {
 		parcel.writeInt(mPort);
 		parcel.writeString(mProto);
 		parcel.writeInt(mUserAuth ? 1 : 0);
-		// parcel.writeString(mCert);
+		if (mCert != null) {
+			parcel.writeInt(mCert.length);
+			parcel.writeByteArray(mCert);
+		} else {
+			parcel.writeInt(0);
+			parcel.writeByteArray(new byte[0]);
+		}
 		parcel.writeString(mUserCert);
 		parcel.writeInt(mUseCompLzo ? 1 : 0);
 		parcel.writeInt(mRedirectGateway ? 1 : 0);
