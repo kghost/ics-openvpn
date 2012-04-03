@@ -1,6 +1,7 @@
 package info.kghost.android.openvpn;
 
 import info.kghost.android.openvpn.R;
+import info.kghost.android.openvpn.OpenvpnInstaller.Result;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -51,6 +52,7 @@ public class VpnSettings extends PreferenceActivity {
 
 	private static final String TAG = VpnSettings.class.getSimpleName();
 
+	private static final String PREF_INFO_VPN = "openvpn_installed_info";
 	private static final String PREF_ADD_VPN = "add_new_vpn";
 	private static final String PREF_VPN_LIST = "vpn_list";
 
@@ -68,6 +70,7 @@ public class VpnSettings extends PreferenceActivity {
 
 	private static final int OK_BUTTON = DialogInterface.BUTTON_POSITIVE;
 
+	private PreferenceScreen mInfoVpn;
 	private PreferenceScreen mAddVpn;
 	private PreferenceCategory mVpnListContainer;
 
@@ -80,6 +83,9 @@ public class VpnSettings extends PreferenceActivity {
 	private VpnProfile mConnectingProfile;
 
 	private VpnStatus mStatus;
+
+	private OpenvpnInstaller installer;
+
 	private IVpnService mIVpnService;
 	private ServiceConnection mConnection = new ServiceConnection() {
 		@Override
@@ -123,6 +129,7 @@ public class VpnSettings extends PreferenceActivity {
 		mVpnListContainer = (PreferenceCategory) findPreference(PREF_VPN_LIST);
 
 		// set up the "add vpn" preference
+		mInfoVpn = (PreferenceScreen) findPreference(PREF_INFO_VPN);
 		mAddVpn = (PreferenceScreen) findPreference(PREF_ADD_VPN);
 		mAddVpn.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			public boolean onPreferenceClick(Preference preference) {
@@ -139,7 +146,32 @@ public class VpnSettings extends PreferenceActivity {
 
 	@Override
 	protected void onStart() {
-		super.onResume();
+		super.onStart();
+
+		installer = new OpenvpnInstaller();
+		installer.install(this, new OpenvpnInstaller.Callback() {
+			@Override
+			public void done(Result result) {
+				if (result.isInstalled()) {
+					mInfoVpn.setSummary(result.getText());
+				} else {
+					new AlertDialog.Builder(VpnSettings.this)
+							.setTitle(
+									VpnSettings.this
+											.getString(R.string.openvpn_install_error_title))
+							.setMessage(result.getText())
+							.setCancelable(false)
+							.setPositiveButton("OK",
+									new DialogInterface.OnClickListener() {
+										public void onClick(
+												DialogInterface dialog, int id) {
+											VpnSettings.this.finish();
+										}
+									}).show();
+				}
+			}
+		});
+
 		updatePreferenceList();
 
 		IntentFilter filter = new IntentFilter();
@@ -154,7 +186,9 @@ public class VpnSettings extends PreferenceActivity {
 	protected void onStop() {
 		unbindService(mConnection);
 		unregisterReceiver(mReceiver);
-		super.onPause();
+		installer.cancel();
+		installer = null;
+		super.onStop();
 	}
 
 	@Override
@@ -332,18 +366,47 @@ public class VpnSettings extends PreferenceActivity {
 			case IDLE:
 				for (VpnSettings.VpnPreference pref : mVpnPreferenceMap
 						.values()) {
+					pref.setSummary("");
 					pref.setEnabled(true);
 				}
 				return;
 			case CONNECTING:
+				for (Map.Entry<String, VpnSettings.VpnPreference> pref : mVpnPreferenceMap
+						.entrySet()) {
+					if (mStatus.name.equals(pref.getKey())) {
+						pref.getValue().setSummary(
+								this.getString(R.string.vpn_connecting));
+					} else {
+						pref.getValue().setSummary("");
+					}
+					pref.getValue().setEnabled(false);
+				}
+				return;
 			case CONNECTED:
 				for (Map.Entry<String, VpnSettings.VpnPreference> pref : mVpnPreferenceMap
 						.entrySet()) {
-					pref.getValue().setEnabled(
-							mStatus.name.equals(pref.getKey()));
+					if (mStatus.name.equals(pref.getKey())) {
+						pref.getValue().setSummary(
+								this.getString(R.string.vpn_connected));
+						pref.getValue().setEnabled(true);
+					} else {
+						pref.getValue().setSummary("");
+						pref.getValue().setEnabled(false);
+					}
 				}
 				return;
 			case PREPARING:
+				for (Map.Entry<String, VpnSettings.VpnPreference> pref : mVpnPreferenceMap
+						.entrySet()) {
+					if (mStatus.name.equals(pref.getKey())) {
+						pref.getValue().setSummary(
+								this.getString(R.string.vpn_preparing));
+					} else {
+						pref.getValue().setSummary("");
+					}
+					pref.getValue().setEnabled(false);
+				}
+				return;
 			case DISCONNECTING:
 			case CANCELLED:
 			case UNUSABLE:
@@ -351,6 +414,7 @@ public class VpnSettings extends PreferenceActivity {
 			default:
 				for (VpnSettings.VpnPreference pref : mVpnPreferenceMap
 						.values()) {
+					pref.setSummary("");
 					pref.setEnabled(false);
 				}
 				return;

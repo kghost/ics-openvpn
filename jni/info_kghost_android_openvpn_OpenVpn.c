@@ -16,10 +16,10 @@ extern "C" {
 /*
  * Class:     info_kghost_android_openvpn_OpenVpn
  * Method:    start
- * Signature: ([Ljava/lang/String;Linfo/kghost/android/openvpn/FileDescriptorHolder;)I
+ * Signature: (Ljava/lang/String;[Ljava/lang/String;Linfo/kghost/android/openvpn/FileDescriptorHolder;)I
  */
 JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
-  (JNIEnv *env, jclass cls, jobjectArray options, jobject control) {
+  (JNIEnv *env, jclass cls, jstring exec, jobjectArray options, jobject control) {
     // create control socket
     int socket[2];
     int result = socketpair(PF_UNIX, SOCK_DGRAM, 0, socket);
@@ -34,6 +34,12 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
       goto ERROR1;
     }
 
+    const char *path = (*env)->GetStringUTFChars(env, exec, NULL);
+    if (path == NULL) {
+      throwError(env, "java/lang/IllegalArgumentException", "exec is null");
+      goto ERROR1;
+    }
+
     jsize length = (*env)->GetArrayLength(env, options);
     const char** array = malloc(sizeof(char*)*(length + 4));
     array[0] = "openvpn";
@@ -44,7 +50,7 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
     array[length+3] = 0;
     int i;
     for (i = 0; i < length; ++i) {
-      array[i+3] = (*env)->GetStringUTFChars(env, (*env)->GetObjectArrayElement(env, options, i), 0);
+      array[i+3] = (*env)->GetStringUTFChars(env, (*env)->GetObjectArrayElement(env, options, i), NULL);
     }
 
     // Keep track of the system properties fd so we don't close it.
@@ -75,7 +81,7 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
         }
       }
 
-      execvp("openvpn", (char**)array);
+      execvp(path, (char**)array);
       exit(errno); // unreachable if execvp success
     }
 
@@ -86,6 +92,7 @@ JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
       (*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, options, i), array[i+3]);
     }
     free(array);
+    (*env)->ReleaseStringUTFChars(env, exec, path);
     return result;
 
 ERROR2:
@@ -93,6 +100,7 @@ ERROR2:
       (*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, options, i), array[i+3]);
     }
     free(array);
+    (*env)->ReleaseStringUTFChars(env, exec, path);
 ERROR1:
     close(socket[0]);
     close(socket[1]);

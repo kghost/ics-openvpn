@@ -79,7 +79,8 @@
 
 	<!-- VPN type selection activity title -->
 	<string name="vpn_type_title">Add VPN</string>
-	<!-- "Add VPN" preference title -->
+	<string name="openvpn_installed_info">Installed OpenVPN</string>
+		<!-- "Add VPN" preference title -->
 	<string name="vpn_add_new_vpn">Add VPN</string>
 	<!-- VPN profile editor title when adding a new profile -->
 	<string name="vpn_edit_title_add">
@@ -237,4 +238,10 @@
 	<string name="vpn_secret_unchanged">(unchanged)</string>
 	<!-- A secret edit field's grayed out value when it has not been set -->
 	<string name="vpn_secret_not_set">(not set)</string>
+	
+	<string name="openvpn_install_error_title">Can\'t install OpenVpn</string>
+	<string name="openvpn_installer_title">OpenVpn Installer</string>
+	<string name="openvpn_installer_openvpn_not_found">OpenVpn binary not exists</string>
+	<string name="openvpn_installer_installing">Installing OpenVpn…</string>
+	<string name="openvpn_installer_checking">Checking OpenVpn…</string>
 </resources>

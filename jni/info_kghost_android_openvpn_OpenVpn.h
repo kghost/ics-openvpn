@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     info_kghost_android_openvpn_OpenVpn
  * Method:    start
- * Signature: ([Ljava/lang/String;Linfo/kghost/android/openvpn/FileDescriptorHolder;)I
+ * Signature: (Ljava/lang/String;[Ljava/lang/String;Linfo/kghost/android/openvpn/FileDescriptorHolder;)I
  */
 JNIEXPORT jint JNICALL Java_info_kghost_android_openvpn_OpenVpn_start
-  (JNIEnv *, jclass, jobjectArray, jobject);
+  (JNIEnv *, jclass, jstring, jobjectArray, jobject);
 
 /*
  * Class:     info_kghost_android_openvpn_OpenVpn

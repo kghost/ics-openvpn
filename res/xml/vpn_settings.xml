@@ -1,21 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        android:title="@string/vpn_settings_activity_title">
+    android:title="@string/vpn_settings_activity_title" >
 
-    <PreferenceScreen android:key="add_new_vpn"
-        android:title="@string/vpn_add_new_vpn">
-        <!--intent
-            android:action="android.intent.action.MAIN"
-            android:targetPackage="info.kghost.android.openvpn"
-            android:targetClass="info.kghost.android.openvpn.VpnEditor" /-->
-    </PreferenceScreen>
+    <PreferenceScreen
+        android:key="openvpn_installed_info"
+        android:title="@string/openvpn_installed_info"
+        android:summary="Unknown"
+        android:enabled="false" />
+    <PreferenceScreen
+        android:key="add_new_vpn"
+        android:title="@string/vpn_add_new_vpn" />
 
-    <!--CheckBoxPreference android:key="installer_enabled"
-            android:defaultValue="false"
-            android:title="@string/installer_enabled"
-            android:summaryOn="@string/installer_enabled_summary_on"
-            android:summaryOff="@string/installer_enabled_summary_off" /-->
-
-    <PreferenceCategory android:key="vpn_list" android:title="@string/vpns">
+    <PreferenceCategory
+        android:key="vpn_list"
+        android:title="@string/vpns" >
     </PreferenceCategory>
-</PreferenceScreen>   
+
+</PreferenceScreen>

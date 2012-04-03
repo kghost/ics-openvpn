@@ -15,6 +15,8 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -116,7 +118,9 @@ public class OpenVpnService extends VpnService {
 
 				this.publishProgress(VpnState.CONNECTING);
 				vpn = new OpenVpn();
-				vpn.start(args);
+				vpn.start(
+						new File(OpenVpnService.this.getCacheDir(), "openvpn")
+								.getAbsolutePath(), args);
 
 				ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
 				while (!stop) {
@@ -281,6 +285,7 @@ public class OpenVpnService extends VpnService {
 
 	private OpenvpnProfile mProfile = null;
 	private VpnStatus.VpnState mState = null;
+	private ExecutorService executor;
 	private Task mTask = null;
 
 	static {
@@ -303,7 +308,7 @@ public class OpenVpnService extends VpnService {
 			if (mTask == null)
 				mTask = new Task();
 			if (mTask.getStatus() == AsyncTask.Status.PENDING) {
-				mTask.execute(mProfile);
+				mTask.executeOnExecutor(executor, mProfile);
 				return true;
 			}
 			return false;
@@ -330,6 +335,12 @@ public class OpenVpnService extends VpnService {
 	};
 
 	@Override
+	public void onCreate() {
+		super.onCreate();
+		executor = Executors.newSingleThreadExecutor();
+	}
+
+	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		return START_STICKY;
 	}
@@ -344,6 +355,7 @@ public class OpenVpnService extends VpnService {
 	public void onDestroy() {
 		if (mTask != null)
 			mTask.interrupt();
+		executor = null;
 		super.onDestroy();
 	}
 }

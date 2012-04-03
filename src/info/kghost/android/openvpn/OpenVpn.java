@@ -9,12 +9,13 @@ public class OpenVpn {
 	private ControlChannel control;
 	private int pid = -1;
 
-	private static native int start(String[] options,
+	private static native int start(String exec, String[] options,
 			FileDescriptorHolder control) throws IOException;
 
 	private static native void stop(int pid);
 
-	public synchronized void start(String[] options) throws IOException {
+	public synchronized void start(String exec, String[] options)
+			throws IOException {
 		if (pid != -1) {
 			throw new RuntimeException("Already started");
 		}
@@ -22,7 +23,7 @@ public class OpenVpn {
 			throw new RuntimeException("Options is wrong");
 		}
 		FileDescriptorHolder out = new FileDescriptorHolder();
-		pid = start(options, out);
+		pid = start(exec, options, out);
 		control = new ControlChannel(out);
 	}
 

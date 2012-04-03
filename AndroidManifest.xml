@@ -5,7 +5,7 @@
 	<uses-permission android:name="android.permission.USE_CREDENTIALS" />
 	<uses-sdk android:minSdkVersion="15" />
 
-	<application android:label="@string/app">
+	<application android:label="@string/app" android:icon="@drawable/openvpn_icon">
 		<activity android:name="info.kghost.android.openvpn.VpnSettings"
 			android:configChanges="orientation|keyboardHidden">
 			<intent-filter>
