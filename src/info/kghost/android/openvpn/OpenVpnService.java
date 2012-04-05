@@ -3,8 +3,8 @@ package info.kghost.android.openvpn;
 import info.kghost.android.openvpn.VpnStatus.VpnState;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -26,6 +26,7 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.security.KeyChain;
+import android.util.Base64;
 import android.util.Log;
 
 public class OpenVpnService extends VpnService {
@@ -91,14 +92,15 @@ public class OpenVpnService extends VpnService {
 						pkcs12Store.setCertificateEntry("root", root);
 				}
 
-				File tmp = new File(OpenVpnService.this.getCacheDir(),
-						"tmp.pfx");
-				FileOutputStream f = new FileOutputStream(tmp);
+				ByteArrayOutputStream f = new ByteArrayOutputStream();
 				pkcs12Store.store(f, "".toCharArray());
-				f.close();
 
 				config.add("--pkcs12");
-				config.add(tmp.getAbsolutePath());
+				config.add("[[INLINE]]");
+				byte[] bytes = f.toByteArray();
+				config.add(Base64.encodeToString(bytes, Base64.NO_PADDING
+						| Base64.NO_WRAP));
+				f.close();
 			} catch (Exception e) {
 				Log.w(OpenVpnService.class.getName(), "Error generate pkcs12",
 						e);

@@ -1573,12 +1573,32 @@ init_ssl (const struct options *options)
       int i;
       char password[256];
 
-      /* Load the PKCS #12 file */
-      if (!(fp = fopen(options->pkcs12_file, "rb")))
-        msg (M_SSLERR, "Error opening file %s", options->pkcs12_file);
-      p12 = d2i_PKCS12_fp(fp, NULL);
-      fclose (fp);
-      if (!p12) msg (M_SSLERR, "Error reading PKCS#12 file %s", options->pkcs12_file);
+#if ENABLE_INLINE_FILES
+      if (!strcmp (options->pkcs12_file, INLINE_FILE_TAG) && options->pkcs12_file_inline)
+	{
+	  int base64_len = strlen(options->pkcs12_file_inline);
+	  int len = base64_len/4*3 + (base64_len%4) - 1;
+	  msg (M_INFO, "PKCS#12 base64 len %d %d: %s", base64_len, len, options->pkcs12_file_inline);
+	  char *buf = malloc(len);
+	  base64_decode(options->pkcs12_file_inline, buf);
+	  BIO *in = BIO_new_mem_buf (buf, len);
+	  if (in) {
+	    p12 = d2i_PKCS12_bio(in, NULL);
+	    if (!p12) msg (M_SSLERR, "Error reading PKCS#12 file %s", options->pkcs12_file);
+	    BIO_free (in);
+	  }
+	  free(buf);
+	}
+      else
+#endif
+	{
+	  /* Load the PKCS #12 file */
+	  if (!(fp = fopen(options->pkcs12_file, "rb")))
+	    msg (M_SSLERR, "Error opening file %s", options->pkcs12_file);
+	  p12 = d2i_PKCS12_fp(fp, NULL);
+	  fclose (fp);
+	  if (!p12) msg (M_SSLERR, "Error reading PKCS#12 file %s", options->pkcs12_file);
+        }
       
       /* Parse the PKCS #12 file */
       if (!PKCS12_parse(p12, "", &pkey, &cert, &ca))

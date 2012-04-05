@@ -472,6 +472,7 @@ struct options
   const char *ca_file_inline;
   const char *cert_file_inline;
   char *priv_key_file_inline;
+  char *pkcs12_file_inline;
   const char *dh_file_inline;
 #endif
 
