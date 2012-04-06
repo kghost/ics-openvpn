@@ -105,6 +105,8 @@
 	<string name="vpn_disconnected">Disconnected</string>
 	<!-- Preference summary text when VPN is connected -->
 	<string name="vpn_connected">Connected</string>
+	<!-- Preference summary text when VPN is unusable -->
+	<string name="vpn_unusable">Unusable</string>
 	<!-- Preference summary text when VPN is not connected -->
 	<string name="vpn_connect_hint">Connect to network</string>
 

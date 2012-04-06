@@ -1,12 +1,15 @@
 package info.kghost.android.openvpn;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.Arrays;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 
 import android.app.ProgressDialog;
@@ -57,69 +60,73 @@ public class OpenvpnInstaller {
 		}
 
 		private Result tryInstall() {
+			publishProgress(c.getString(R.string.openvpn_installer_installing));
 			try {
 				InputStream in = c.getAssets().open("openvpn");
-				if (in.available() == 0) {
-					throw new FileNotFoundException(
-							c.getString(R.string.openvpn_installer_openvpn_not_found));
-				}
-
 				FileOutputStream out = new FileOutputStream(path);
 				IOUtils.copy(in, out);
-
 				out.close();
 				in.close();
 
-				Process chmod = Runtime.getRuntime().exec(
-						new String[] { "/system/bin/chmod", "700",
-								path.getAbsolutePath() });
-
-				StringWriter writer = new StringWriter();
-				IOUtils.copy(chmod.getInputStream(), writer, "UTF-8");
-				IOUtils.copy(chmod.getErrorStream(), writer, "UTF-8");
-				String output = writer.toString();
-
-				chmod.waitFor();
-				if (chmod.exitValue() != 0) {
-					return new Result(false, output);
+				if (!path.setExecutable(true, true)) {
+					throw new IOException("Can't set executable flag");
 				}
 
 				return check(false);
 			} catch (IOException e) {
-				return new Result(false, e.getLocalizedMessage());
-			} catch (InterruptedException e) {
 				return new Result(false, e.getLocalizedMessage());
 			}
 		}
 
 		private Result check(boolean tryInstall) {
 			try {
-				String[] argv = new String[2];
-				argv[0] = path.getAbsolutePath();
-				argv[1] = "--version";
-				Process process = Runtime.getRuntime().exec(argv);
+				byte[] embeded = DigestUtils.md5(c.getAssets().open("openvpn"));
+				byte[] installed;
+				try {
+					installed = DigestUtils.md5(new FileInputStream(path));
+				} catch (FileNotFoundException e) {
+					if (tryInstall)
+						return tryInstall();
+					else
+						throw e;
+				}
+				if (!Arrays.equals(embeded, installed)) {
+					if (tryInstall)
+						return tryInstall();
+					else
+						throw new RuntimeException(
+								"OpenVpn binary not installed");
+				}
+
+				if (!path.setExecutable(true, true)) {
+					throw new IOException("Can't set executable flag");
+				}
+
+				Process process;
+				try {
+					process = new ProcessBuilder()
+							.command(path.getAbsolutePath(), "--version")
+							.redirectErrorStream(true).start();
+				} catch (IOException e) {
+					if (tryInstall
+							&& e.getCause().getMessage()
+									.equals("No such file or directory")) {
+						return tryInstall();
+					} else {
+						throw e;
+					}
+				}
 
 				StringWriter writer = new StringWriter();
 				IOUtils.copy(process.getInputStream(), writer, "UTF-8");
-				IOUtils.copy(process.getErrorStream(), writer, "UTF-8");
 				String output = writer.toString();
 
 				process.waitFor();
 				return new Result(process.exitValue() == 1, output);
 			} catch (InterruptedException e) {
 				return new Result(false, e.getLocalizedMessage());
-			} catch (FileNotFoundException e) {
-				return new Result(false, e.getLocalizedMessage());
 			} catch (IOException e) {
-				if (tryInstall
-						&& e.getCause().getMessage()
-								.equals("No such file or directory")) {
-					publishProgress(c
-							.getString(R.string.openvpn_installer_installing));
-					return tryInstall();
-				} else {
-					return new Result(false, e.getLocalizedMessage());
-				}
+				return new Result(false, e.getLocalizedMessage());
 			}
 		}
 
@@ -139,7 +146,8 @@ public class OpenvpnInstaller {
 		@Override
 		protected void onPostExecute(Result result) {
 			super.onPostExecute(result);
-			dialog.dismiss();
+			if (dialog.isShowing())
+				dialog.dismiss();
 			cb.done(result);
 		}
 
@@ -151,7 +159,8 @@ public class OpenvpnInstaller {
 
 		@Override
 		protected void onCancelled() {
-			dialog.dismiss();
+			if (dialog.isShowing())
+				dialog.dismiss();
 			super.onCancelled();
 		}
 	}

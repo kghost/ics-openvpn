@@ -5,7 +5,6 @@ import info.kghost.android.openvpn.VpnStatus.VpnState;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
@@ -141,14 +140,24 @@ public class OpenVpnService extends VpnService {
 										"remote fd not valid !!!");
 							OpenVpnService.this.protect(fd.get());
 							fd.close();
-							FileDescriptorHolder tun = new FileDescriptorHolder(
-									builder.establish().detachFd());
-
-							buffer.clear();
-							buffer.put((byte) 0x74); // 't'
-							buffer.flip();
-							vpn.send(buffer, tun);
-							tun.close();
+							FileDescriptorHolder tun = null;
+							try {
+								tun = new FileDescriptorHolder(builder
+										.establish().detachFd());
+								buffer.clear();
+								buffer.put((byte) 't');
+								buffer.flip();
+								vpn.send(buffer, tun);
+							} catch (RuntimeException e) {
+								buffer.clear();
+								buffer.put((byte) 'e');
+								buffer.flip();
+								vpn.send(buffer);
+								throw e;
+							} finally {
+								if (tun != null)
+									tun.close();
+							}
 							this.publishProgress(VpnState.CONNECTED);
 							break;
 						}
@@ -190,7 +199,8 @@ public class OpenVpnService extends VpnService {
 						break;
 					}
 				}
-			} catch (IOException e) {
+			} catch (Exception e) {
+				this.publishProgress(VpnState.UNUSABLE);
 				Log.wtf(this.getClass().getName(), e);
 			} finally {
 				if (vpn != null) {
@@ -278,6 +288,7 @@ public class OpenVpnService extends VpnService {
 				update(R.string.vpn_disconnected);
 				break;
 			case UNUSABLE:
+				update(R.string.vpn_unusable);
 				break;
 			case UNKNOWN:
 				break;
@@ -340,11 +351,6 @@ public class OpenVpnService extends VpnService {
 	public void onCreate() {
 		super.onCreate();
 		executor = Executors.newSingleThreadExecutor();
-	}
-
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		return START_STICKY;
 	}
 
 	@Override
