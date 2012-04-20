@@ -9,14 +9,6 @@ extern "C" {
 #endif
 /*
  * Class:     info_kghost_android_openvpn_FileDescriptorHolder
- * Method:    shutdown
- * Signature: (I)V
- */
-JNIEXPORT void JNICALL Java_info_kghost_android_openvpn_FileDescriptorHolder_shutdown
-  (JNIEnv *, jclass, jint);
-
-/*
- * Class:     info_kghost_android_openvpn_FileDescriptorHolder
  * Method:    close
  * Signature: (I)V
  */

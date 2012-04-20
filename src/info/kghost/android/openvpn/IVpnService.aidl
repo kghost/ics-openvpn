@@ -12,7 +12,7 @@ interface IVpnService {
      * Sets up the VPN connection.
      * @param profile the profile object
      */
-    boolean connect(in VpnProfile profile);
+    boolean connect(in VpnProfile profile, in String username, in String password);
 
     /**
      * Tears down the VPN connection.

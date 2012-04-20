@@ -19,17 +19,10 @@ public class FileDescriptorHolder {
 		return descriptor >= 0;
 	}
 
-	public void shutdown() {
-		shutdown(descriptor);
-		descriptor = -1;
-	}
-
 	public void close() {
 		close(descriptor);
 		descriptor = -1;
 	}
-
-	private static native void shutdown(int fd);
 
 	private static native void close(int fd);
 }

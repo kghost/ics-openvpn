@@ -5,10 +5,15 @@ import info.kghost.android.openvpn.VpnStatus.VpnState;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.ClosedByInterruptException;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -29,15 +34,45 @@ import android.util.Base64;
 import android.util.Log;
 
 public class OpenVpnService extends VpnService {
-	class Task extends AsyncTask<OpenvpnProfile, VpnStatus.VpnState, Object> {
-		private OpenVpn vpn;
-		private boolean stop = false;
+	class Task extends AsyncTask<Object, VpnStatus.VpnState, Object> {
+		private Process process;
+		private ManagementSocket sock;
+		private OpenvpnProfile profile;
+		private String username;
+		private String password;
+		private Charset charset = Charset.forName("UTF-8");
+
+		public Task(OpenvpnProfile profile, String username, String password) {
+			this.profile = profile;
+			this.username = username;
+			this.password = password;
+		}
 
 		private String[] prepare(OpenvpnProfile profile) {
 			ArrayList<String> config = new ArrayList<String>();
+			config.add(new File(OpenVpnService.this.getCacheDir(), "openvpn")
+					.getAbsolutePath());
 			config.add("--client");
 			config.add("--tls-client");
 
+			config.add("--script-security");
+			config.add("0");
+
+			config.add("--management");
+			config.add(managementPath.getAbsolutePath());
+			config.add("unixseq");
+			config.add("--management-query-passwords");
+			config.add("--management-hold");
+			config.add("--management-signal");
+			config.add("--remap-usr1");
+			config.add("SIGTERM");
+			config.add("--route-noexec");
+			config.add("--ifconfig-noexec");
+			config.add("--verb");
+			config.add("3");
+
+			config.add("--dev");
+			config.add("[[ANDROID]]");
 			config.add("--dev-type");
 			config.add("tun");
 
@@ -97,9 +132,8 @@ public class OpenVpnService extends VpnService {
 				config.add("--pkcs12");
 				config.add("[[INLINE]]");
 				byte[] bytes = f.toByteArray();
-				config.add(Base64.encodeToString(bytes, Base64.NO_PADDING
-						| Base64.NO_WRAP));
 				f.close();
+				config.add(Base64.encodeToString(bytes, Base64.DEFAULT));
 			} catch (Exception e) {
 				Log.w(OpenVpnService.class.getName(), "Error generate pkcs12",
 						e);
@@ -108,118 +142,168 @@ public class OpenVpnService extends VpnService {
 			return config.toArray(new String[0]);
 		}
 
+		private boolean isProcessAlive(Process process) {
+			try {
+				process.exitValue();
+				return false;
+			} catch (IllegalThreadStateException e) {
+				return true;
+			}
+		}
+
+		private ByteBuffer str_to_bb(String msg)
+				throws CharacterCodingException {
+			CharsetEncoder encoder = charset.newEncoder();
+			ByteBuffer buffer = ByteBuffer
+					.allocateDirect(((int) (msg.length() * encoder
+							.maxBytesPerChar())) + 1);
+			CoderResult result = encoder.encode(CharBuffer.wrap(msg), buffer,
+					true);
+			if (!result.isUnderflow())
+				result.throwException();
+			result = encoder.flush(buffer);
+			if (!result.isUnderflow())
+				result.throwException();
+			buffer.flip();
+			return buffer;
+		}
+
+		private String bb_to_str(ByteBuffer buffer)
+				throws CharacterCodingException {
+			CharsetDecoder decoder = charset.newDecoder();
+			return decoder.decode(buffer).toString();
+		}
+
+		private int netmaskToPrefixLength(String netmask)
+				throws UnknownHostException {
+			byte[] mask = Inet4Address.getByName(netmask).getAddress();
+			if (mask.length != 4) {
+				throw new IllegalArgumentException("Not an IPv4 address");
+			}
+			int mask_int = ((mask[3] & 0xff) << 24) | ((mask[2] & 0xff) << 16)
+					| ((mask[1] & 0xff) << 8) | (mask[0] & 0xff);
+			return Integer.bitCount(mask_int);
+		}
+
+		private void doCommands() throws CharacterCodingException,
+				UnknownHostException {
+			ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
+			VpnService.Builder builder = new VpnService.Builder();
+			while (true) {
+				buffer.limit(0);
+				FileDescriptorHolder fd = new FileDescriptorHolder();
+				try {
+					int read = sock.read(buffer, fd);
+					if (read <= 0)
+						break;
+					String lines[] = bb_to_str(buffer).split("\\r?\\n");
+					for (int i = 0; i < lines.length; ++i) {
+						String cmd = lines[i];
+						if (cmd.startsWith(">INFO:")) {
+							Log.i(this.getClass().getName(), cmd);
+						} else if (cmd.equals(">HOLD:Waiting for hold release")) {
+							sock.write(str_to_bb("echo on all\n"
+									+ "log on all\n" + "state on all\n"
+									+ "hold release\n"));
+						} else if (cmd.startsWith(">ECHO:")) {
+							String c = cmd.substring(cmd.indexOf(',') + 1);
+							if (c.startsWith("tun-protect")) {
+								protect(fd.get());
+								fd.close();
+							} else if (c.startsWith("tun-ip ")) {
+								String[] ip = c.substring("tun-ip ".length())
+										.split(" ");
+								builder.addAddress(ip[0], 32);
+							} else if (c.startsWith("tun-mtu ")) {
+								builder.setMtu(Integer.parseInt(c
+										.substring("tun-mtu ".length())));
+							} else if (c.startsWith("tun-route ")) {
+								String[] route = c.substring(
+										"tun-route ".length()).split(" ");
+								builder.addRoute(route[0],
+										netmaskToPrefixLength(route[1]));
+							} else if (c.startsWith("tun-redirect-gateway")) {
+								builder.addRoute("0.0.0.0", 0);
+							} else if (c.startsWith("tun-dns ")) {
+								String dns = c.substring("tun-dns ".length());
+								builder.addDnsServer(dns);
+							} else {
+								Log.i(this.getClass().getName(),
+										"Ignore ECHO: " + cmd);
+							}
+						} else if (cmd
+								.equals(">NEED-TUN:Need 'TUN' confirmation")) {
+							FileDescriptorHolder tun = new FileDescriptorHolder(
+									builder.establish().detachFd());
+							sock.write(str_to_bb("tun TUN ok\n"), tun);
+							tun.close();
+						} else {
+							if (fd.valid())
+								Log.w(this.getClass().getName(),
+										"Unknown Command: " + cmd + " (fd: "
+												+ fd.get() + ")");
+							else
+								Log.w(this.getClass().getName(),
+										"Unknown Command: " + cmd);
+						}
+					}
+				} finally {
+					if (fd.valid())
+						throw new RuntimeException("Unexpected fd");
+				}
+			}
+
+		}
+
 		@Override
-		protected Object doInBackground(OpenvpnProfile... params) {
+		protected Object doInBackground(Object... params) {
 			this.publishProgress(VpnState.PREPARING);
-			OpenvpnProfile profile = params[0];
 
 			try {
-				VpnService.Builder builder = new VpnService.Builder();
 				String[] args = prepare(profile);
 
 				this.publishProgress(VpnState.CONNECTING);
-				vpn = new OpenVpn();
-				vpn.start(
-						new File(OpenVpnService.this.getCacheDir(), "openvpn")
-								.getAbsolutePath(), args);
+				process = Runtime.getRuntime().exec(args);
 
-				ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
-				while (!stop) {
-					try {
-						buffer.position(0);
-						buffer.limit(0);
-						FileDescriptorHolder fd = new FileDescriptorHolder();
-						if (vpn.recv(buffer, fd) <= 0) {
-							stop = true;
-							break;
-						}
-						switch (buffer.get()) {
-						case 'T': {
-							if (!fd.valid())
-								throw new RuntimeException(
-										"remote fd not valid !!!");
-							OpenVpnService.this.protect(fd.get());
-							fd.close();
-							FileDescriptorHolder tun = null;
-							try {
-								tun = new FileDescriptorHolder(builder
-										.establish().detachFd());
-								buffer.clear();
-								buffer.put((byte) 't');
-								buffer.flip();
-								vpn.send(buffer, tun);
-							} catch (RuntimeException e) {
-								buffer.clear();
-								buffer.put((byte) 'e');
-								buffer.flip();
-								vpn.send(buffer);
-								throw e;
-							} finally {
-								if (tun != null)
-									tun.close();
-							}
-							this.publishProgress(VpnState.CONNECTED);
-							break;
-						}
-						case 'R': {
-							byte[] ip = new byte[4];
-							buffer.get(ip);
-							int mask = buffer.getInt();
-							builder.addRoute(InetAddress.getByAddress(ip), mask);
-							break;
-						}
-						case 'A': {
-							byte[] ip = new byte[4];
-							buffer.get(ip);
-							int mask = buffer.getInt();
-							builder.addAddress(InetAddress.getByAddress(ip),
-									mask);
-							break;
-						}
-						case 'D': {
-							byte[] ip = new byte[4];
-							buffer.get(ip);
-							builder.addDnsServer(InetAddress.getByAddress(ip));
-							break;
-						}
-						case 'M': {
-							int mtu = buffer.getInt();
-							builder.setMtu(mtu);
-							break;
-						}
-						}
-					} catch (InterruptedException e) {
-						stop = true;
-						break;
-					} catch (ClosedByInterruptException e) {
-						stop = true;
-						break;
-					} catch (AsynchronousCloseException e) {
-						stop = true;
-						break;
+				for (int i = 0; i < 30 && isProcessAlive(process)
+						&& sock == null; ++i)
+					try { // Wait openvpn to create management socket
+						sock = new ManagementSocket(managementPath);
+					} catch (Exception e) {
+						Thread.sleep(1000);
+					}
+				if (sock == null) {
+					if (isProcessAlive(process))
+						process.destroy();
+					return null;
+				}
+				try {
+					doCommands();
+				} finally {
+					synchronized (this) {
+						sock.shutdownAll();
+						sock.close();
+						sock = null;
 					}
 				}
 			} catch (Exception e) {
 				this.publishProgress(VpnState.UNUSABLE);
 				Log.wtf(this.getClass().getName(), e);
 			} finally {
-				if (vpn != null) {
-					if (vpn.isStarted())
-						vpn.stop();
-					vpn = null;
+				this.publishProgress(VpnState.DISCONNECTING);
+				try {
+					process.waitFor();
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
 				}
 				this.publishProgress(VpnState.IDLE);
 			}
 			return null;
 		}
 
-		public void interrupt() {
-			stop = true;
-			if (vpn != null) {
-				if (vpn.isStarted())
-					vpn.stop();
-				vpn = null;
-			}
+		public synchronized void interrupt() {
+			if (sock != null)
+				sock.shutdownAll();
 		}
 
 		private void update(int resId) {
@@ -264,8 +348,8 @@ public class OpenVpnService extends VpnService {
 			Intent intent = new Intent(
 					"info.kghost.android.openvpn.connectivity");
 			VpnStatus s = new VpnStatus();
-			if (mProfile != null)
-				s.name = mProfile.getName();
+			if (profile != null)
+				s.name = profile.getName();
 			s.state = mState;
 			intent.putExtra("connection_state", s);
 			OpenVpnService.this.sendBroadcast(intent);
@@ -296,10 +380,11 @@ public class OpenVpnService extends VpnService {
 		}
 	};
 
-	private OpenvpnProfile mProfile = null;
+	private String mName = null;
 	private VpnStatus.VpnState mState = null;
 	private ExecutorService executor;
 	private Task mTask = null;
+	private File managementPath = null;
 
 	static {
 		System.loadLibrary("jni_openvpn");
@@ -312,16 +397,17 @@ public class OpenVpnService extends VpnService {
 
 	private final IVpnService.Stub mBinder = new IVpnService.Stub() {
 		@Override
-		public boolean connect(VpnProfile profile) throws RemoteException {
-			mProfile = (OpenvpnProfile) profile;
-			if (mProfile == null)
+		public boolean connect(VpnProfile profile, String username,
+				String password) throws RemoteException {
+			if (profile == null)
 				return false;
 			if (mTask != null && mTask.getStatus() == AsyncTask.Status.FINISHED)
 				mTask = null;
 			if (mTask == null)
-				mTask = new Task();
+				mTask = new Task((OpenvpnProfile) profile, username, password);
 			if (mTask.getStatus() == AsyncTask.Status.PENDING) {
-				mTask.executeOnExecutor(executor, mProfile);
+				mName = profile.getName();
+				mTask.executeOnExecutor(executor);
 				return true;
 			}
 			return false;
@@ -331,14 +417,13 @@ public class OpenVpnService extends VpnService {
 		public void disconnect() throws RemoteException {
 			if (mTask != null)
 				mTask.interrupt();
-			mProfile = null;
+			mName = null;
 		}
 
 		@Override
 		public VpnStatus checkStatus() throws RemoteException {
 			VpnStatus s = new VpnStatus();
-			if (mProfile != null)
-				s.name = mProfile.getName();
+			s.name = mName;
 			if (mState != null)
 				s.state = mState;
 			else
@@ -350,6 +435,7 @@ public class OpenVpnService extends VpnService {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		managementPath = new File(getCacheDir(), "manage");
 		executor = Executors.newSingleThreadExecutor();
 	}
 

@@ -3,8 +3,7 @@ LOCAL_PATH:= $(call my-dir)
 common_SRC_FILES:= \
 	helper.c \
 	info_kghost_android_openvpn_FileDescriptorHolder.c \
-	info_kghost_android_openvpn_OpenVpn.c \
-	info_kghost_android_openvpn_OpenVpn_ControlChannel.c
+	info_kghost_android_openvpn_ManagementSocket.c
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES:= $(common_SRC_FILES)
