@@ -76,6 +76,10 @@ public class OpenVpnService extends VpnService {
 			config.add("--dev-type");
 			config.add("tun");
 
+			if (profile.getUserAuth()) {
+				config.add("--auth-user-pass");
+			}
+
 			if (profile.getLocalAddr() != null) {
 				config.add("--local");
 				config.add(profile.getLocalAddr());
@@ -237,6 +241,30 @@ public class OpenVpnService extends VpnService {
 									builder.establish().detachFd());
 							sock.write(str_to_bb("tun TUN ok\n"), tun);
 							tun.close();
+							// TODO: use state message
+							this.publishProgress(VpnState.CONNECTED);
+						} else if (cmd.startsWith(">PASSWORD:")) {
+							String c = cmd.substring(">PASSWORD:".length());
+							int first = c.indexOf('\'');
+							int second = c.indexOf('\'', first + 1);
+							final String authType = c.substring(first + 1,
+									second);
+
+							if (c.startsWith("Need")) {
+								sock.write(str_to_bb("username '"
+										+ authType
+										+ "' \""
+										+ username.replace("\"", "\\\"")
+												.replace("\\", "\\\\")
+										+ "\"\n"
+										+ "password '"
+										+ authType
+										+ "' '"
+										+ password.replace("\"", "\\\"")
+												.replace("\\", "\\\\") + "'\n"));
+							} else {
+								throw new RuntimeException("Password Error");
+							}
 						} else {
 							if (fd.valid())
 								Log.w(this.getClass().getName(),
