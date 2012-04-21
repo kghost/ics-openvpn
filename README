@@ -1,0 +1,4 @@
+== BUILD ==
+
+Put the prebuild openvpn binary (https://github.com/kghost/android_external_openvpn) to "assets/openvpn" then make
+
