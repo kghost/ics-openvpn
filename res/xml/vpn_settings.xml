@@ -3,13 +3,16 @@
     android:title="@string/vpn_settings_activity_title" >
 
     <PreferenceScreen
+        android:enabled="false"
         android:key="openvpn_installed_info"
-        android:title="@string/openvpn_installed_info"
         android:summary="Unknown"
-        android:enabled="false" />
+        android:title="@string/openvpn_installed_info" />
     <PreferenceScreen
         android:key="add_new_vpn"
         android:title="@string/vpn_add_new_vpn" />
+    <PreferenceScreen
+        android:key="view_log"
+        android:title="@string/vpn_view_log" />
 
     <PreferenceCategory
         android:key="vpn_list"

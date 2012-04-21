@@ -1,5 +1,6 @@
 package info.kghost.android.openvpn;
 
+import info.kghost.android.openvpn.LogQueue;
 import info.kghost.android.openvpn.VpnProfile;
 import info.kghost.android.openvpn.VpnStatus;
 
@@ -23,4 +24,9 @@ interface IVpnService {
      * Makes the service broadcast the connectivity state.
      */
     VpnStatus checkStatus();
+
+    /**
+     * Get current/last connection log
+     */
+    LogQueue getLog();
 }

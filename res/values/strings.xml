@@ -13,6 +13,7 @@
 		<xliff:g id="name" example="Work Network">%s</xliff:g>
 	</string>
 	<!-- In VPN connect dialog, for inputing username and password -->
+	<string name="vpn_username_dialog_title">Auth</string>
 	<string name="vpn_username_colon">Username:</string>
 	<string name="vpn_password_colon">Password:</string>
 	<string name="vpn_a_username">a username</string>
@@ -138,13 +139,6 @@
 	<!-- Complete term -->
 	<string name="vpn_ca_certificate">Certificate authority (CA) certificate</string>
 	<string name="vpn_a_ca_certificate">a CA certificate</string>
-	<!-- Preference title -->
-	<string name="vpn_l2tp_secret_string_title">Set L2TP secret</string>
-	<!-- Complete term -->
-	<string name="vpn_l2tp_secret">L2TP secret</string>
-	<string name="vpn_a_l2tp_secret">an L2TP secret</string>
-	<string name="vpn_pptp_encryption_title">encryption</string>
-	<string name="vpn_pptp_encryption">PPTP encryption</string>
 	<string name="vpn_openvpn_port">Server port</string>
 	<string name="vpn_openvpn_protocol">Protocol to use</string>
 	<string name="vpn_openvpn_device">Device to use</string>
@@ -174,12 +168,6 @@
 	<string name="vpn_openvpn_set_keysize_default">default</string>
 	<string name="vpn_openvpn_set_extra">Extra arguments</string>
 	<string name="vpn_openvpn_set_extra_message">Enter the extra command line arguments</string>
-
-	<!-- Preference title -->
-	<string name="vpn_ipsec_presharedkey_title">Set IPSec pre-shared key</string>
-	<!-- Complete term -->
-	<string name="vpn_ipsec_presharedkey">IPSec pre-shared key</string>
-	<string name="vpn_a_ipsec_presharedkey">an IPSec pre-shared key</string>
 
 	<!-- Preference title -->
 	<string name="vpn_vpn_server_title">Set VPN server</string>
@@ -246,4 +234,7 @@
 	<string name="openvpn_installer_openvpn_not_found">OpenVpn binary not exists</string>
 	<string name="openvpn_installer_installing">Installing OpenVpn…</string>
 	<string name="openvpn_installer_checking">Checking OpenVpn…</string>
+	
+	<string name="openvpn_log_dialog_title">Log</string>
+	<string name="vpn_view_log">View Log</string>
 </resources>

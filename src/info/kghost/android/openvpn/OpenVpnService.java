@@ -50,8 +50,7 @@ public class OpenVpnService extends VpnService {
 
 		private String[] prepare(OpenvpnProfile profile) {
 			ArrayList<String> config = new ArrayList<String>();
-			config.add(new File(OpenVpnService.this.getCacheDir(), "openvpn")
-					.getAbsolutePath());
+			config.add(new File(getCacheDir(), "openvpn").getAbsolutePath());
 			config.add("--client");
 			config.add("--tls-client");
 
@@ -192,7 +191,8 @@ public class OpenVpnService extends VpnService {
 		private void doCommands() throws CharacterCodingException,
 				UnknownHostException {
 			ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
-			VpnService.Builder builder = new VpnService.Builder();
+			VpnService.Builder builder = null;
+			log = new LogQueue(63);
 			while (true) {
 				buffer.limit(0);
 				FileDescriptorHolder fd = new FileDescriptorHolder();
@@ -203,8 +203,11 @@ public class OpenVpnService extends VpnService {
 					String lines[] = bb_to_str(buffer).split("\\r?\\n");
 					for (int i = 0; i < lines.length; ++i) {
 						String cmd = lines[i];
-						if (cmd.startsWith(">INFO:")) {
-							Log.i(this.getClass().getName(), cmd);
+						if (cmd.startsWith(">LOG:")) {
+							log.add(cmd.substring(">LOG:".length()));
+							Log.i(getClass().getName(), cmd);
+						} else if (cmd.startsWith(">INFO:")) {
+							Log.i(getClass().getName(), cmd);
 						} else if (cmd.equals(">HOLD:Waiting for hold release")) {
 							sock.write(str_to_bb("echo on all\n"
 									+ "log on all\n" + "state on all\n"
@@ -232,8 +235,8 @@ public class OpenVpnService extends VpnService {
 								String dns = c.substring("tun-dns ".length());
 								builder.addDnsServer(dns);
 							} else {
-								Log.i(this.getClass().getName(),
-										"Ignore ECHO: " + cmd);
+								Log.i(getClass().getName(), "Ignore ECHO: "
+										+ cmd);
 							}
 						} else if (cmd
 								.equals(">NEED-TUN:Need 'TUN' confirmation")) {
@@ -241,8 +244,16 @@ public class OpenVpnService extends VpnService {
 									builder.establish().detachFd());
 							sock.write(str_to_bb("tun TUN ok\n"), tun);
 							tun.close();
-							// TODO: use state message
-							this.publishProgress(VpnState.CONNECTED);
+						} else if (cmd.startsWith(">STATE:")) {
+							int start = cmd.indexOf(',');
+							int end = cmd.indexOf(',', start + 1);
+							String state = cmd.substring(start + 1, end);
+							if (state.equals("GET_CONFIG")) {
+								builder = new VpnService.Builder();
+							} else if (state.equals("CONNECTED")) {
+								builder = null;
+								publishProgress(VpnState.CONNECTED);
+							}
 						} else if (cmd.startsWith(">PASSWORD:")) {
 							String c = cmd.substring(">PASSWORD:".length());
 							int first = c.indexOf('\'');
@@ -267,12 +278,11 @@ public class OpenVpnService extends VpnService {
 							}
 						} else {
 							if (fd.valid())
-								Log.w(this.getClass().getName(),
-										"Unknown Command: " + cmd + " (fd: "
-												+ fd.get() + ")");
+								Log.w(getClass().getName(), "Unknown Command: "
+										+ cmd + " (fd: " + fd.get() + ")");
 							else
-								Log.w(this.getClass().getName(),
-										"Unknown Command: " + cmd);
+								Log.w(getClass().getName(), "Unknown Command: "
+										+ cmd);
 						}
 					}
 				} finally {
@@ -285,14 +295,10 @@ public class OpenVpnService extends VpnService {
 
 		@Override
 		protected Object doInBackground(Object... params) {
-			this.publishProgress(VpnState.PREPARING);
+			publishProgress(VpnState.PREPARING);
 
 			try {
-				String[] args = prepare(profile);
-
-				this.publishProgress(VpnState.CONNECTING);
-				process = Runtime.getRuntime().exec(args);
-
+				process = Runtime.getRuntime().exec(prepare(profile));
 				for (int i = 0; i < 30 && isProcessAlive(process)
 						&& sock == null; ++i)
 					try { // Wait openvpn to create management socket
@@ -305,6 +311,7 @@ public class OpenVpnService extends VpnService {
 						process.destroy();
 					return null;
 				}
+				publishProgress(VpnState.CONNECTING);
 				try {
 					doCommands();
 				} finally {
@@ -315,23 +322,27 @@ public class OpenVpnService extends VpnService {
 					}
 				}
 			} catch (Exception e) {
-				this.publishProgress(VpnState.UNUSABLE);
-				Log.wtf(this.getClass().getName(), e);
+				publishProgress(VpnState.UNUSABLE);
+				Log.wtf(getClass().getName(), e);
 			} finally {
-				this.publishProgress(VpnState.DISCONNECTING);
+				publishProgress(VpnState.DISCONNECTING);
 				try {
 					process.waitFor();
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
-				this.publishProgress(VpnState.IDLE);
+				publishProgress(VpnState.IDLE);
 			}
 			return null;
 		}
 
 		public synchronized void interrupt() {
 			if (sock != null)
-				sock.shutdownAll();
+				try {
+					sock.write(str_to_bb("exit\n"));
+				} catch (CharacterCodingException e) {
+					Log.wtf(getClass().getName(), "WTF", e);
+				}
 		}
 
 		private void update(int resId) {
@@ -380,7 +391,7 @@ public class OpenVpnService extends VpnService {
 				s.name = profile.getName();
 			s.state = mState;
 			intent.putExtra("connection_state", s);
-			OpenVpnService.this.sendBroadcast(intent);
+			sendBroadcast(intent);
 
 			switch (mState) {
 			case PREPARING:
@@ -413,6 +424,7 @@ public class OpenVpnService extends VpnService {
 	private ExecutorService executor;
 	private Task mTask = null;
 	private File managementPath = null;
+	private LogQueue log = null;
 
 	static {
 		System.loadLibrary("jni_openvpn");
@@ -457,6 +469,11 @@ public class OpenVpnService extends VpnService {
 			else
 				s.state = VpnStatus.VpnState.IDLE;
 			return s;
+		}
+
+		@Override
+		public LogQueue getLog() throws RemoteException {
+			return log;
 		}
 	};
 

@@ -46,7 +46,7 @@ class AuthDialog extends DialogFragment {
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		return new AlertDialog.Builder(getActivity())
-				.setTitle(getString(R.string.openvpn_install_error_title))
+				.setTitle(getString(R.string.vpn_username_dialog_title))
 				.setView(createConnectView())
 				.setPositiveButton(R.string.vpn_connect_button,
 						new DialogInterface.OnClickListener() {
@@ -57,6 +57,6 @@ class AuthDialog extends DialogFragment {
 										usernameView.getText(),
 										passwordView.getText());
 							}
-						}).show();
+						}).create();
 	}
 }

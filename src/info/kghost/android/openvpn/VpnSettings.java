@@ -54,6 +54,7 @@ public class VpnSettings extends PreferenceActivity {
 
 	private static final String PREF_INFO_VPN = "openvpn_installed_info";
 	private static final String PREF_ADD_VPN = "add_new_vpn";
+	private static final String PREF_VIEW_LOG = "view_log";
 	private static final String PREF_VPN_LIST = "vpn_list";
 
 	private File PROFILES_ROOT;
@@ -71,7 +72,6 @@ public class VpnSettings extends PreferenceActivity {
 	private static final int OK_BUTTON = DialogInterface.BUTTON_POSITIVE;
 
 	private PreferenceScreen mInfoVpn;
-	private PreferenceScreen mAddVpn;
 	private PreferenceCategory mVpnListContainer;
 
 	// profile name --> VpnPreference
@@ -132,13 +132,28 @@ public class VpnSettings extends PreferenceActivity {
 
 		// set up the "add vpn" preference
 		mInfoVpn = (PreferenceScreen) findPreference(PREF_INFO_VPN);
-		mAddVpn = (PreferenceScreen) findPreference(PREF_ADD_VPN);
-		mAddVpn.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			public boolean onPreferenceClick(Preference preference) {
-				startVpnEditor(createVpnProfile());
-				return true;
-			}
-		});
+		((PreferenceScreen) findPreference(PREF_ADD_VPN))
+				.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+					public boolean onPreferenceClick(Preference preference) {
+						startVpnEditor(createVpnProfile());
+						return true;
+					}
+				});
+
+		((PreferenceScreen) findPreference(PREF_VIEW_LOG))
+				.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+					public boolean onPreferenceClick(Preference preference) {
+						if (mIVpnService != null) {
+							try {
+								mShowingDialog = new LogDialog(
+										VpnSettings.this, mIVpnService.getLog());
+								mShowingDialog.show(getFragmentManager(), null);
+							} catch (RemoteException e) {
+							}
+						}
+						return true;
+					}
+				});
 
 		// for long-press gesture on a profile preference
 		registerForContextMenu(getListView());
