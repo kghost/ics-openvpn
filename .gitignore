@@ -1,9 +1,21 @@
-.classpath
-.settings/
-.project
-assets/
-bin/
-gen/
-project.properties
-tags
+# my secret sign key
+/signkey.keystore
+
+# prebuild openvpn
+/assets/openvpn
+
+# eclipse things
+/.classpath
+/.settings/
+/.project
+/bin/
+/gen/
+/project.properties
+
+# maven things
+/target/
+/libs/
+/obj/
+
+# vim things
 *.swp
