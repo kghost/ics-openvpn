@@ -1,8 +1,10 @@
-== How To Build ==
+How To Build
+============
 
-Put the prebuild openvpn binary (https://github.com/kghost/android_external_openvpn) to "assets/openvpn" then:
+Put the [prebuild openvpn binary](https://github.com/kghost/android_external_openvpn/tree/ics) to "assets/openvpn" then:
 
-=== Method 1. Build with android soure tree (recommanded) ===
+Method 1. Build with android soure tree (recommanded)
+-----------------------------------------------------
 
     # under root of android source tree
     source build/envsetup.sh
@@ -10,7 +12,8 @@ Put the prebuild openvpn binary (https://github.com/kghost/android_external_open
     cd `OpenVpn folder`
     mm
 
-=== Method 2. Using maven and ndk ===
+Method 2. Using maven and ndk
+-----------------------------
 
 Put your signkey at `OpenVpn folder`/signkey.keystore (optional)
 
