@@ -16,7 +16,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 
-public class OpenvpnInstaller {
+class OpenvpnInstaller {
 	public interface Callback {
 		public void done(Result result);
 	}

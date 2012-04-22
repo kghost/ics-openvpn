@@ -9,25 +9,15 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
-class AuthDialog extends DialogFragment {
-	public static interface Callback {
-		public void onSuccess(boolean save, CharSequence username,
-				CharSequence password);
-	}
-
-	private Callback cb;
-	private String username;
-	private TextView usernameView;
-	private TextView passwordView;
-	private CheckBox saveUsername;
-
-	public AuthDialog(String username) {
+public class AuthDialog extends DialogFragment {
+	public void setUsername(String username) {
 		this.username = username;
 	}
 
-	public void setCallback(Callback callback) {
-		cb = callback;
-	}
+	private TextView usernameView;
+	private TextView passwordView;
+	private CheckBox saveUsername;
+	private String username = null;
 
 	private View createConnectView() {
 		View v = View.inflate(getActivity(), R.layout.vpn_connect_dialog_view,
@@ -53,9 +43,12 @@ class AuthDialog extends DialogFragment {
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
-								cb.onSuccess(saveUsername.isChecked(),
-										usernameView.getText(),
-										passwordView.getText());
+								((VpnSettings) getActivity())
+										.doAuthDialogCallback(saveUsername
+												.isChecked(), usernameView
+												.getText().toString(),
+												passwordView.getText()
+														.toString());
 							}
 						}).create();
 	}

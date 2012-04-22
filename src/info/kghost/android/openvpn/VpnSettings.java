@@ -14,10 +14,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
-import android.app.AlertDialog;
 import android.app.DialogFragment;
+import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -69,7 +68,7 @@ public class VpnSettings extends PreferenceActivity {
 	private static final int CONTEXT_MENU_EDIT_ID = ContextMenu.FIRST + 2;
 	private static final int CONTEXT_MENU_DELETE_ID = ContextMenu.FIRST + 3;
 
-	private static final int OK_BUTTON = DialogInterface.BUTTON_POSITIVE;
+	static final int OK_BUTTON = DialogInterface.BUTTON_POSITIVE;
 
 	private PreferenceScreen mInfoVpn;
 	private PreferenceCategory mVpnListContainer;
@@ -77,8 +76,6 @@ public class VpnSettings extends PreferenceActivity {
 	// profile name --> VpnPreference
 	private Map<String, VpnPreference> mVpnPreferenceMap;
 	private List<VpnProfile> mVpnProfileList;
-
-	private DialogFragment mShowingDialog;
 
 	private VpnProfile mConnectingProfile;
 	private String mConnectingUsername;
@@ -97,8 +94,10 @@ public class VpnSettings extends PreferenceActivity {
 				mStatus = mIVpnService.checkStatus();
 				updatePreferenceList();
 			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Log.e(getClass().getName(), "Unable to connect service", e);
+				ErrorMsgDialog dialog = new ErrorMsgDialog();
+				dialog.setMessage(e.getLocalizedMessage());
+				showDialog(dialog);
 			}
 		}
 
@@ -123,7 +122,7 @@ public class VpnSettings extends PreferenceActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		PROFILES_ROOT = this.getFilesDir();
+		PROFILES_ROOT = getFilesDir();
 
 		addPreferencesFromResource(R.xml.vpn_settings);
 
@@ -135,7 +134,7 @@ public class VpnSettings extends PreferenceActivity {
 		((PreferenceScreen) findPreference(PREF_ADD_VPN))
 				.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 					public boolean onPreferenceClick(Preference preference) {
-						startVpnEditor(createVpnProfile());
+						startVpnEditor(new OpenvpnProfile());
 						return true;
 					}
 				});
@@ -145,9 +144,9 @@ public class VpnSettings extends PreferenceActivity {
 					public boolean onPreferenceClick(Preference preference) {
 						if (mIVpnService != null) {
 							try {
-								mShowingDialog = new LogDialog(
-										VpnSettings.this, mIVpnService.getLog());
-								mShowingDialog.show(getFragmentManager(), null);
+								LogDialog dialog = new LogDialog();
+								dialog.setLog(mIVpnService.getLog());
+								showDialog(dialog);
 							} catch (RemoteException e) {
 							}
 						}
@@ -159,6 +158,29 @@ public class VpnSettings extends PreferenceActivity {
 		registerForContextMenu(getListView());
 
 		retrieveVpnListFromStorage();
+
+		IntentFilter filter = new IntentFilter();
+		filter.addAction("info.kghost.android.openvpn.connectivity");
+		registerReceiver(mReceiver, filter);
+
+		bindService(new Intent(this, OpenVpnService.class), mConnection,
+				Context.BIND_AUTO_CREATE);
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putParcelable("profile", mConnectingProfile);
+		outState.putString("username", mConnectingUsername);
+		outState.putString("password", mConnectingPassword);
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle state) {
+		super.onRestoreInstanceState(state);
+		mConnectingProfile = state.getParcelable("profile");
+		mConnectingUsername = state.getString("username");
+		mConnectingPassword = state.getString("password");
 	}
 
 	@Override
@@ -172,33 +194,18 @@ public class VpnSettings extends PreferenceActivity {
 				if (result.isInstalled()) {
 					mInfoVpn.setSummary(result.getText());
 				} else {
-					mShowingDialog = new ErrorMsgDialog(result.getText(),
-							new Callable<Object>() {
-								@Override
-								public Object call() throws Exception {
-									VpnSettings.this.finish();
-									return null;
-								}
-							});
-					mShowingDialog.show(getFragmentManager(), null);
+					ErrorMsgDialog dialog = new ErrorMsgDialog();
+					dialog.setMessage(result.getText());
+					showDialog(dialog);
 				}
 			}
 		});
 
 		updatePreferenceList();
-
-		IntentFilter filter = new IntentFilter();
-		filter.addAction("info.kghost.android.openvpn.connectivity");
-		registerReceiver(mReceiver, filter);
-
-		bindService(new Intent(this, OpenVpnService.class), mConnection,
-				Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
 	protected void onStop() {
-		unbindService(mConnection);
-		unregisterReceiver(mReceiver);
 		installer.cancel();
 		installer = null;
 		super.onStop();
@@ -206,11 +213,10 @@ public class VpnSettings extends PreferenceActivity {
 
 	@Override
 	protected void onDestroy() {
-		super.onDestroy();
+		unbindService(mConnection);
+		unregisterReceiver(mReceiver);
 		unregisterForContextMenu(getListView());
-		if (mShowingDialog != null) {
-			mShowingDialog.dismiss();
-		}
+		super.onDestroy();
 	}
 
 	@Override
@@ -253,7 +259,7 @@ public class VpnSettings extends PreferenceActivity {
 			return true;
 
 		case CONTEXT_MENU_DELETE_ID:
-			deleteProfile(position);
+			deleteProfile(p);
 			return true;
 		}
 
@@ -319,7 +325,7 @@ public class VpnSettings extends PreferenceActivity {
 				}
 			} catch (IOException e) {
 				final VpnProfile profile = p;
-				Util.showErrorMessage(this, e + ": " + e.getMessage(),
+				Util.showErrorMessage(this, e + ": " + e.getLocalizedMessage(),
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int w) {
 								startVpnEditor(profile);
@@ -451,11 +457,10 @@ public class VpnSettings extends PreferenceActivity {
 	// Replaces the profile at index in mVpnProfileList with p.
 	// Returns true if p's name is a duplicate.
 	private boolean checkDuplicateName(VpnProfile p, int index) {
-		List<VpnProfile> list = mVpnProfileList;
 		VpnPreference pref = mVpnPreferenceMap.get(p.getName());
-		if ((pref != null) && (index >= 0) && (index < list.size())) {
+		if ((pref != null) && (index >= 0) && (index < mVpnProfileList.size())) {
 			// not a duplicate if p is to replace the profile at index
-			if (pref.mProfile == list.get(index))
+			if (pref.mProfile == mVpnProfileList.get(index))
 				pref = null;
 		}
 		return (pref != null);
@@ -472,35 +477,10 @@ public class VpnSettings extends PreferenceActivity {
 	}
 
 	// position: position in mVpnProfileList
-	private void deleteProfile(final int position) {
-		if ((position < 0) || (position >= mVpnProfileList.size()))
-			return;
-
-		mShowingDialog = new DialogFragment() {
-			private final DialogInterface.OnClickListener onClickListener = new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int which) {
-					if (which == OK_BUTTON) {
-						VpnProfile p = mVpnProfileList.remove(position);
-						VpnPreference pref = mVpnPreferenceMap.remove(p
-								.getName());
-						mVpnListContainer.removePreference(pref);
-						removeProfileFromStorage(p);
-					}
-				}
-			};
-
-			@Override
-			public void onCreate(Bundle savedInstanceState) {
-				new AlertDialog.Builder(VpnSettings.this)
-						.setTitle(android.R.string.dialog_alert_title)
-						.setIcon(android.R.drawable.ic_dialog_alert)
-						.setMessage(R.string.vpn_confirm_profile_deletion)
-						.setPositiveButton(android.R.string.ok, onClickListener)
-						.setNegativeButton(R.string.vpn_no_button,
-								onClickListener).create();
-			}
-		};
-		mShowingDialog.show(getFragmentManager(), null);
+	private void deleteProfile(final VpnProfile p) {
+		DeleteConformDialog dialog = new DeleteConformDialog();
+		dialog.setId(p.getId());
+		showDialog(dialog);
 	}
 
 	// Randomly generates an ID for the profile.
@@ -579,22 +559,10 @@ public class VpnSettings extends PreferenceActivity {
 
 	private synchronized void connect(final VpnProfile p) {
 		if (((OpenvpnProfile) p).getUserAuth()) {
-			if (mShowingDialog != null) {
-				mShowingDialog.dismiss();
-				mShowingDialog = null;
-			}
-			AuthDialog dialog = new AuthDialog(p.getSavedUsername());
-			dialog.setCallback(new AuthDialog.Callback() {
-				@Override
-				public void onSuccess(boolean save, CharSequence username,
-						CharSequence password) {
-					if (save)
-						p.setSavedUsername(username.toString());
-					connect(p, username.toString(), password.toString());
-				}
-			});
-			mShowingDialog = dialog;
-			mShowingDialog.show(getFragmentManager(), null);
+			mConnectingProfile = p;
+			AuthDialog dialog = new AuthDialog();
+			dialog.setUsername(p.getSavedUsername());
+			showDialog(dialog);
 		} else {
 			connect(p, null, null);
 		}
@@ -718,11 +686,7 @@ public class VpnSettings extends PreferenceActivity {
 		}
 	}
 
-	private VpnProfile createVpnProfile() {
-		return new OpenvpnProfile();
-	}
-
-	private class VpnPreference extends Preference {
+	private static class VpnPreference extends Preference {
 		VpnProfile mProfile;
 
 		VpnPreference(Context c, VpnProfile p) {
@@ -733,6 +697,39 @@ public class VpnSettings extends PreferenceActivity {
 		void setProfile(VpnProfile p) {
 			mProfile = p;
 			setTitle(p.getName());
+		}
+	}
+
+	private void showDialog(DialogFragment dialog) {
+		FragmentTransaction ft = getFragmentManager().beginTransaction();
+		ft.addToBackStack(null);
+		dialog.show(ft, null);
+	}
+
+	public void doAuthDialogCallback(boolean saveUsername, String username,
+			String password) {
+		if (mConnectingProfile != null) {
+			if (saveUsername && username != null
+					&& !username.equals(mConnectingProfile.getSavedUsername())) {
+				mConnectingProfile.setSavedUsername(username);
+				try {
+					saveProfileToStorage(mConnectingProfile);
+				} catch (IOException e) {
+					Toast.makeText(this, e.getLocalizedMessage(),
+							Toast.LENGTH_LONG);
+				}
+			}
+			connect(mConnectingProfile, username, password);
+		}
+	}
+
+	public void doDeleteProfile(String id) {
+		int position = getProfileIndexFromId(id);
+		if (position >= 0) {
+			VpnProfile p = mVpnProfileList.remove(position);
+			VpnPreference pref = mVpnPreferenceMap.remove(p.getName());
+			mVpnListContainer.removePreference(pref);
+			removeProfileFromStorage(p);
 		}
 	}
 }

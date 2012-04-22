@@ -1,6 +1,6 @@
 package info.kghost.android.openvpn;
 
-public class FileDescriptorHolder {
+class FileDescriptorHolder {
 	private int descriptor = -1;
 
 	public FileDescriptorHolder() {

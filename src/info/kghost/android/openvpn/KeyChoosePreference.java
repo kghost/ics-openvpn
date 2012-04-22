@@ -6,7 +6,7 @@ import android.preference.Preference;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 
-public class KeyChoosePreference extends Preference {
+class KeyChoosePreference extends Preference {
 	private String mValue;
 
 	public KeyChoosePreference(Context context) {

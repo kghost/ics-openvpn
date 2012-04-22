@@ -82,9 +82,8 @@ class OpenvpnEditor extends VpnProfileEditor {
 			intent.addCategory(Intent.CATEGORY_OPENABLE);
 
 			try {
-				mActivity
-						.startActivityForResult(Intent.createChooser(intent,
-								"Select certification file"), FILE_SELECT_CODE);
+				mActivity.startActivityForResult(Intent.createChooser(intent,
+						"Select certification file"), FILE_SELECT_CODE);
 			} catch (android.content.ActivityNotFoundException ex) {
 				// Potentially direct the user to the Market with a Dialog
 				Toast.makeText(mActivity, "Please install a File Manager.",
@@ -156,18 +155,8 @@ class OpenvpnEditor extends VpnProfileEditor {
 							mCert.setSummary(cert);
 						}
 					});
-				} catch (KeyStoreException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (NoSuchAlgorithmException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (CertificateException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
 				}
 
 				return true;

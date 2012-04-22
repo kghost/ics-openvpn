@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class ManagementSocket {
+class ManagementSocket {
 	protected int socket;
 
 	protected native static int open(String socketFile);

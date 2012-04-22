@@ -1,34 +1,29 @@
 package info.kghost.android.openvpn;
 
-import java.util.concurrent.Callable;
-
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 
 public class ErrorMsgDialog extends DialogFragment {
-	private CharSequence msg;
-	private Callable<Object> cb;
+	private String msg;
 
-	public ErrorMsgDialog(String message, Callable<Object> callable) {
+	public void setMessage(String message) {
 		msg = message;
-		cb = callable;
 	}
 
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		new AlertDialog.Builder(getActivity())
+	public Dialog onCreateDialog(Bundle savedInstanceState) {
+		this.setCancelable(false);
+		return new AlertDialog.Builder(getActivity())
 				.setTitle(R.string.openvpn_install_error_title).setMessage(msg)
-				.setCancelable(false)
-				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int id) {
-						try {
-							cb.call();
-						} catch (Exception e) {
-							throw new RuntimeException(e);
-						}
+				.setPositiveButton(android.R.string.ok, new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						getActivity().finish();
 					}
-				}).create();
+				}).setCancelable(false).create();
 	}
 }

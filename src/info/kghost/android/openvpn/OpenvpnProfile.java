@@ -5,7 +5,7 @@ import android.os.Parcel;
 /**
  * The profile for Openvpn type of VPN. {@hide}
  */
-public class OpenvpnProfile extends VpnProfile {
+class OpenvpnProfile extends VpnProfile {
 	private static final long serialVersionUID = 1L;
 
 	private static final String PROTO_UDP = "udp";
