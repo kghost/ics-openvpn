@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 
@@ -12,7 +11,7 @@ import org.spongycastle.openssl.PEMReader;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.Context;
+import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -20,7 +19,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
-import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceGroup;
@@ -37,8 +35,6 @@ public class VpnEditor extends PreferenceActivity {
 	private static final int MENU_SAVE = Menu.FIRST;
 	private static final int MENU_CANCEL = Menu.FIRST + 1;
 	private static final int MENU_ID_ADVANCED = Menu.FIRST + 2;
-
-	private static final int CONFIRM_DIALOG_ID = 0;
 
 	private static final int FILE_SELECT_CODE = 0;
 	private static final int REQUEST_ADVANCED = 1;
@@ -63,10 +59,13 @@ public class VpnEditor extends PreferenceActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		OpenvpnProfile p = (OpenvpnProfile) ((savedInstanceState == null) ? getIntent()
+		mProfile = (OpenvpnProfile) ((savedInstanceState == null) ? getIntent()
 				.getParcelableExtra(VpnSettings.KEY_VPN_PROFILE)
 				: savedInstanceState.getParcelable(KEY_PROFILE));
-		mAddingProfile = TextUtils.isEmpty(p.getName());
+		mAddingProfile = TextUtils.isEmpty(mProfile.getName());
+		Parcel parcel = Parcel.obtain();
+		mProfile.writeToParcel(parcel, 0);
+		mOriginalProfileData = parcel.marshall();
 
 		// Loads the XML preferences file
 		addPreferencesFromResource(R.xml.vpn_edit);
@@ -121,16 +120,14 @@ public class VpnEditor extends PreferenceActivity {
 		mCert = new CertChoosePreference(this);
 		mCert.setTitle(R.string.vpn_ca_certificate);
 		if (mProfile.getCertName() != null) {
-			Certificate cert = null;
 			try {
 				KeyStore ks = KeyStore.getInstance("BKS");
 				ks.load(new ByteArrayInputStream(mProfile.getCertName()), null);
-				cert = (Certificate) ks.getCertificate("c");
-			} catch (GeneralSecurityException e) {
-			} catch (IOException e) {
-			}
-			if (cert != null)
+				Certificate cert = (Certificate) ks.getCertificate("c");
 				mCert.setSummary(cert.toString());
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
 		} else {
 			mCert.setSummary(R.string.vpn_ca_certificate_title);
 		}
@@ -185,10 +182,6 @@ public class VpnEditor extends PreferenceActivity {
 					}
 				});
 		subpanel.addPreference(mUserCert);
-
-		Parcel parcel = Parcel.obtain();
-		p.writeToParcel(parcel, 0);
-		mOriginalProfileData = parcel.marshall();
 	}
 
 	@Override
@@ -223,26 +216,25 @@ public class VpnEditor extends PreferenceActivity {
 				Util.showLongToastMessage(this, e.getLocalizedMessage());
 			}
 		} else if (requestCode == REQUEST_ADVANCED) {
-			OpenvpnProfile p = mProfile;
 			OpenvpnProfile newP = data.getParcelableExtra(KEY_PROFILE);
 			if (newP == null) {
 				Log.e(TAG, "no profile from advanced settings");
 				return;
 			}
 			// manually copy across all advanced settings
-			p.setPort(newP.getPort());
-			p.setProto(newP.getProto());
-			p.setUseCompLzo(newP.getUseCompLzo());
-			p.setRedirectGateway(newP.getRedirectGateway());
-			p.setSupplyAddr(newP.getSupplyAddr());
-			p.setLocalAddr(newP.getLocalAddr());
-			p.setRemoteAddr(newP.getRemoteAddr());
-			p.setCipher(newP.getCipher());
-			p.setKeySize(newP.getKeySize());
-			p.setExtra(newP.getExtra());
-			p.setUseTlsAuth(newP.getUseTlsAuth());
-			p.setTlsAuthKey(newP.getTlsAuthKey());
-			p.setTlsAuthKeyDirection(newP.getTlsAuthKeyDirection());
+			mProfile.setPort(newP.getPort());
+			mProfile.setProto(newP.getProto());
+			mProfile.setUseCompLzo(newP.getUseCompLzo());
+			mProfile.setRedirectGateway(newP.getRedirectGateway());
+			mProfile.setSupplyAddr(newP.getSupplyAddr());
+			mProfile.setLocalAddr(newP.getLocalAddr());
+			mProfile.setRemoteAddr(newP.getRemoteAddr());
+			mProfile.setCipher(newP.getCipher());
+			mProfile.setKeySize(newP.getKeySize());
+			mProfile.setExtra(newP.getExtra());
+			mProfile.setUseTlsAuth(newP.getUseTlsAuth());
+			mProfile.setTlsAuthKey(newP.getTlsAuthKey());
+			mProfile.setTlsAuthKeyDirection(newP.getTlsAuthKeyDirection());
 		}
 	}
 
@@ -273,7 +265,28 @@ public class VpnEditor extends PreferenceActivity {
 
 		case MENU_CANCEL:
 			if (profileChanged()) {
-				showDialog(CONFIRM_DIALOG_ID);
+				DialogFragment dialog = new DialogFragment() {
+					@Override
+					public Dialog onCreateDialog(Bundle savedInstanceState) {
+						return new AlertDialog.Builder(VpnEditor.this)
+								.setTitle(android.R.string.dialog_alert_title)
+								.setIcon(android.R.drawable.ic_dialog_alert)
+								.setMessage(
+										mAddingProfile ? R.string.vpn_confirm_add_profile_cancellation
+												: R.string.vpn_confirm_edit_profile_cancellation)
+								.setPositiveButton(R.string.vpn_yes_button,
+										new DialogInterface.OnClickListener() {
+											public void onClick(
+													DialogInterface dialog,
+													int w) {
+												finish();
+											}
+										})
+								.setNegativeButton(R.string.vpn_mistake_button,
+										null).create();
+					}
+				};
+				dialog.show(getFragmentManager(), null);
 			} else {
 				finish();
 			}
@@ -282,6 +295,7 @@ public class VpnEditor extends PreferenceActivity {
 			Intent intent = new Intent(this, AdvancedSettings.class);
 			intent.putExtra(KEY_PROFILE, (Parcelable) mProfile);
 			startActivityForResult(intent, REQUEST_ADVANCED);
+			return true;
 		default:
 			return super.onOptionsItemSelected(item);
 		}
@@ -294,8 +308,9 @@ public class VpnEditor extends PreferenceActivity {
 			if (validateAndSetResult())
 				finish();
 			return true;
+		default:
+			return super.onKeyDown(keyCode, event);
 		}
-		return super.onKeyDown(keyCode, event);
 	}
 
 	/**
@@ -319,39 +334,6 @@ public class VpnEditor extends PreferenceActivity {
 		return true;
 	}
 
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		if (id == CONFIRM_DIALOG_ID) {
-			return new AlertDialog.Builder(this)
-					.setTitle(android.R.string.dialog_alert_title)
-					.setIcon(android.R.drawable.ic_dialog_alert)
-					.setMessage(
-							mAddingProfile ? R.string.vpn_confirm_add_profile_cancellation
-									: R.string.vpn_confirm_edit_profile_cancellation)
-					.setPositiveButton(R.string.vpn_yes_button,
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog,
-										int w) {
-									finish();
-								}
-							})
-					.setNegativeButton(R.string.vpn_mistake_button, null)
-					.create();
-		} else
-			return super.onCreateDialog(id);
-	}
-
-	@Override
-	protected void onPrepareDialog(int id, Dialog dialog) {
-		super.onPrepareDialog(id, dialog);
-
-		if (id == CONFIRM_DIALOG_ID) {
-			((AlertDialog) dialog)
-					.setMessage(mAddingProfile ? getString(R.string.vpn_confirm_add_profile_cancellation)
-							: getString(R.string.vpn_confirm_edit_profile_cancellation));
-		}
-	}
-
 	private boolean profileChanged() {
 		Parcel newParcel = Parcel.obtain();
 		mProfile.writeToParcel(newParcel, 0);
@@ -366,31 +348,18 @@ public class VpnEditor extends PreferenceActivity {
 		return true;
 	}
 
-	private String validate(Preference pref, int fieldNameId) {
-		Context c = pref.getContext();
-		String value = (pref instanceof EditTextPreference) ? ((EditTextPreference) pref)
-				.getText() : ((ListPreference) pref).getValue();
-		String formatString = (pref instanceof EditTextPreference) ? c
-				.getString(R.string.vpn_error_miss_entering) : c
-				.getString(R.string.vpn_error_miss_selecting);
-		return (TextUtils.isEmpty(value) ? String.format(formatString,
-				c.getString(fieldNameId)) : null);
-	}
-
 	public String validate() {
-		String result = validate(mName, R.string.vpn_a_name);
-		if (result != null)
-			return result;
+		if (TextUtils.isEmpty(mProfile.getName()))
+			return String.format(getString(R.string.vpn_error_miss_entering),
+					getString(R.string.vpn_a_name));
 
-		result = validate(mServerName, R.string.vpn_a_vpn_server);
-		if (result != null)
-			return result;
+		if (TextUtils.isEmpty(mProfile.getServerName()))
+			return String.format(getString(R.string.vpn_error_miss_entering),
+					getString(R.string.vpn_a_vpn_server));
 
-		// if (!mUserAuth.isChecked()) {
-		// result = validate(mCert, R.string.vpn_a_user_certificate);
-		// if (result != null)
-		// return result;
-		// }
+		if (!mProfile.getUserAuth() && mProfile.getCertName() == null)
+			return String.format(getString(R.string.vpn_error_miss_entering),
+					getString(R.string.vpn_a_user_certificate));
 
 		return null;
 	}

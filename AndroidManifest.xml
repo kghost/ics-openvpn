@@ -1,30 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	android:installLocation="preferExternal" package="info.kghost.android.openvpn">
-	<uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.USE_CREDENTIALS" />
-	<uses-sdk android:minSdkVersion="15" />
+    package="info.kghost.android.openvpn"
+    android:installLocation="preferExternal" >
 
-	<application android:label="@string/app" android:icon="@drawable/openvpn_icon">
-		<activity android:name="info.kghost.android.openvpn.VpnSettings"
-			android:configChanges="orientation|keyboardHidden">
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-		</activity>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
 
-		<activity android:name="info.kghost.android.openvpn.VpnEditor"
-			android:configChanges="orientation|keyboardHidden" />
+    <uses-sdk android:minSdkVersion="15" />
 
-		<activity android:name="info.kghost.android.openvpn.OpenvpnEditor$AdvancedSettings"
-			android:configChanges="orientation|keyboardHidden" />
+    <application
+        android:icon="@drawable/openvpn_icon"
+        android:label="@string/app" >
+        <activity
+            android:name="info.kghost.android.openvpn.VpnSettings"
+            android:configChanges="orientation|keyboardHidden" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
-		<service android:name="info.kghost.android.openvpn.OpenVpnService"
-			android:permission="android.permission.BIND_VPN_SERVICE">
-			<intent-filter>
-				<action android:name="android.net.VpnService" />
-			</intent-filter>
-		</service>
-	</application>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="info.kghost.android.openvpn.VpnEditor"
+            android:configChanges="orientation|keyboardHidden" />
+        <activity
+            android:name="info.kghost.android.openvpn.AdvancedSettings"
+            android:configChanges="orientation|keyboardHidden" />
+
+        <service
+            android:name="info.kghost.android.openvpn.OpenVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE" >
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+    </application>
+
 </manifest>

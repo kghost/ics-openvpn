@@ -74,9 +74,7 @@
 	<string name="vpn_remote_ppp_hung_up_error_dialog_msg">Server hung up. It is possible that you are behind
 		a firewall that prevents you from connecting to the server. Do you
 		want to try again?</string>
-	<string name="vpn_ppp_negotiation_failed_dialog_msg">Server negotiation failed. The server may not agree
-		with your encryption option. Do you want to check your encryption
-		setting?</string>
+	<string name="vpn_error">Connect error</string>
 
 	<!-- VPN type selection activity title -->
 	<string name="vpn_type_title">Add VPN</string>
@@ -167,7 +165,7 @@
 	<string name="vpn_openvpn_set_keysize_message">Leave empty to use cipher-specific default</string>
 	<string name="vpn_openvpn_set_keysize_default">default</string>
 	<string name="vpn_openvpn_set_extra">Extra arguments</string>
-	<string name="vpn_openvpn_set_extra_message">Enter the extra command line arguments</string>
+	<string name="vpn_openvpn_set_extra_message">Enter the extra command line arguments, use space to split multiple options, use double quote to enclose option with space</string>
 
 	<!-- Preference title -->
 	<string name="vpn_vpn_server_title">Set VPN server</string>

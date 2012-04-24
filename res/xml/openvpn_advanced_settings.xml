@@ -1,107 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        android:title="@string/vpn_openvpn_advanced_titlebar">
+    android:title="@string/vpn_openvpn_advanced_titlebar" >
 
     <EditTextPreference
-       android:key="set_port"
-       android:title="@string/vpn_openvpn_port"
-       android:dialogTitle="@string/vpn_openvpn_port"
-       android:singleLine="true"
-       android:inputType="number"
-       />
+        android:dialogTitle="@string/vpn_openvpn_port"
+        android:inputType="number"
+        android:key="set_port"
+        android:singleLine="true"
+        android:title="@string/vpn_openvpn_port" />
 
     <ListPreference
-       android:key="set_protocol"
-       android:title="@string/vpn_openvpn_protocol"
-       android:dialogTitle="@string/vpn_openvpn_protocol"
-       android:entries="@array/vpn_openvpn_protocol_entries"
-       android:entryValues="@array/vpn_openvpn_protocol_entries"
-       />
+        android:dialogTitle="@string/vpn_openvpn_protocol"
+        android:entries="@array/vpn_openvpn_protocol_entries"
+        android:entryValues="@array/vpn_openvpn_protocol_entries"
+        android:key="set_protocol"
+        android:title="@string/vpn_openvpn_protocol" />
 
     <CheckBoxPreference
-       android:key="set_comp_lzo"
-       android:title="@string/vpn_openvpn_comp_lzo"
-       android:summary="@string/vpn_openvpn_comp_lzo_summary"
-       />
+        android:key="set_comp_lzo"
+        android:summary="@string/vpn_openvpn_comp_lzo_summary"
+        android:title="@string/vpn_openvpn_comp_lzo" />
+    <CheckBoxPreference
+        android:key="set_redirect_gateway"
+        android:summary="@string/vpn_openvpn_redirect_gateway_summary"
+        android:title="@string/vpn_openvpn_redirect_gateway_title" />
+    <CheckBoxPreference
+        android:disableDependentsState="true"
+        android:key="set_addr"
+        android:summary="@string/vpn_openvpn_set_addr_summary"
+        android:title="@string/vpn_openvpn_set_addr" />
+
+    <EditTextPreference
+        android:dependency="set_addr"
+        android:dialogTitle="@string/vpn_openvpn_set_local_addr"
+        android:key="set_local_addr"
+        android:singleLine="true"
+        android:title="@string/vpn_openvpn_set_local_addr" />
+    <EditTextPreference
+        android:dependency="set_addr"
+        android:dialogTitle="@string/vpn_openvpn_set_remote_addr"
+        android:key="set_remote_addr"
+        android:singleLine="true"
+        android:title="@string/vpn_openvpn_set_remote_addr" />
+    <EditTextPreference
+        android:dialogMessage="@string/vpn_openvpn_set_cipher_message"
+        android:dialogTitle="@string/vpn_openvpn_set_cipher"
+        android:inputType="textCapCharacters"
+        android:key="set_cipher"
+        android:singleLine="true"
+        android:title="@string/vpn_openvpn_set_cipher" />
+    <EditTextPreference
+        android:dialogMessage="@string/vpn_openvpn_set_keysize_message"
+        android:dialogTitle="@string/vpn_openvpn_set_keysize"
+        android:inputType="number"
+        android:key="set_keysize"
+        android:singleLine="true"
+        android:title="@string/vpn_openvpn_set_keysize" />
 
     <CheckBoxPreference
-       android:key="set_redirect_gateway"
-       android:title="@string/vpn_openvpn_redirect_gateway_title"
-       android:summary="@string/vpn_openvpn_redirect_gateway_summary"
-       />
-
-    <CheckBoxPreference
-       android:key="set_addr"
-       android:title="@string/vpn_openvpn_set_addr"
-       android:summary="@string/vpn_openvpn_set_addr_summary"
-       android:disableDependentsState="true"
-       />
+        android:key="set_use_tls_auth"
+        android:summary="@string/vpn_openvpn_set_use_tls_auth_summary"
+        android:title="@string/vpn_openvpn_set_use_tls_auth" />
 
     <EditTextPreference
-       android:key="set_local_addr"
-       android:title="@string/vpn_openvpn_set_local_addr"
-       android:dialogTitle="@string/vpn_openvpn_set_local_addr"
-       android:dependency="set_addr"
-       android:singleLine="true"
-       />
-
-    <EditTextPreference
-       android:key="set_remote_addr"
-       android:title="@string/vpn_openvpn_set_remote_addr"
-       android:dialogTitle="@string/vpn_openvpn_set_remote_addr"
-       android:dependency="set_addr"
-       android:singleLine="true"
-       />
-
-    <EditTextPreference
-       android:key="set_cipher"
-       android:title="@string/vpn_openvpn_set_cipher"
-       android:dialogTitle="@string/vpn_openvpn_set_cipher"
-       android:dialogMessage="@string/vpn_openvpn_set_cipher_message"
-       android:singleLine="true"
-       android:inputType="textCapCharacters"
-       />
-
-    <EditTextPreference
-       android:key="set_keysize"
-       android:title="@string/vpn_openvpn_set_keysize"
-       android:dialogTitle="@string/vpn_openvpn_set_keysize"
-       android:dialogMessage="@string/vpn_openvpn_set_keysize_message"
-       android:singleLine="true"
-       android:inputType="number"
-       />
-
-    <CheckBoxPreference
-       android:key="set_use_tls_auth"
-       android:title="@string/vpn_openvpn_set_use_tls_auth"
-       android:summary="@string/vpn_openvpn_set_use_tls_auth_summary"
-       />
-
-    <EditTextPreference
-       android:key="set_tls_auth_key"
-       android:title="@string/vpn_openvpn_set_tls_auth_key"
-       android:dialogTitle="@string/vpn_openvpn_set_tls_auth_key"
-       android:singleLine="true"
-       android:inputType="text"
-       android:dependency="set_use_tls_auth"
-       />
+        android:dependency="set_use_tls_auth"
+        android:dialogTitle="@string/vpn_openvpn_set_tls_auth_key"
+        android:inputType="text"
+        android:key="set_tls_auth_key"
+        android:singleLine="true"
+        android:title="@string/vpn_openvpn_set_tls_auth_key" />
 
     <ListPreference
-       android:key="set_tls_auth_key_direction"
-       android:title="@string/vpn_openvpn_set_tls_auth_key_direction"
-       android:dialogTitle="@string/vpn_openvpn_set_tls_auth_key_direction"
-       android:entries="@array/vpn_openvpn_set_tls_auth_key_direction_entries"
-       android:entryValues="@array/vpn_openvpn_set_tls_auth_key_direction_entries_values"
-       android:dependency="set_use_tls_auth"
-       />
+        android:dependency="set_use_tls_auth"
+        android:dialogTitle="@string/vpn_openvpn_set_tls_auth_key_direction"
+        android:entries="@array/vpn_openvpn_set_tls_auth_key_direction_entries"
+        android:entryValues="@array/vpn_openvpn_set_tls_auth_key_direction_entries_values"
+        android:key="set_tls_auth_key_direction"
+        android:title="@string/vpn_openvpn_set_tls_auth_key_direction" />
 
     <EditTextPreference
-       android:key="set_extra"
-       android:title="@string/vpn_openvpn_set_extra"
-       android:dialogTitle="@string/vpn_openvpn_set_extra"
-       android:dialogMessage="@string/vpn_openvpn_set_extra_message"
-       android:singleLine="true"
-       android:inputType="text"
-       />
+        android:dialogMessage="@string/vpn_openvpn_set_extra_message"
+        android:dialogTitle="@string/vpn_openvpn_set_extra"
+        android:inputType="text"
+        android:key="set_extra"
+        android:singleLine="true"
+        android:title="@string/vpn_openvpn_set_extra" />
 
 </PreferenceScreen>

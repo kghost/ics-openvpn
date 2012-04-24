@@ -5,6 +5,10 @@ import info.kghost.android.openvpn.VpnStatus.VpnState;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -23,18 +27,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.net.VpnService;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.os.RemoteException;
 import android.security.KeyChain;
 import android.util.Base64;
 import android.util.Log;
 
 public class OpenVpnService extends VpnService {
-	class Task extends AsyncTask<Object, VpnStatus.VpnState, Object> {
+	class Task extends AsyncTask<Object, VpnStatus.VpnState, String> {
 		private Process process;
 		private ManagementSocket sock;
 		private OpenvpnProfile profile;
@@ -48,7 +55,7 @@ public class OpenVpnService extends VpnService {
 			this.password = password;
 		}
 
-		private String[] prepare(OpenvpnProfile profile) {
+		private String[] prepare(OpenvpnProfile profile) throws Exception {
 			ArrayList<String> config = new ArrayList<String>();
 			config.add(new File(getCacheDir(), "openvpn").getAbsolutePath());
 			config.add("--client");
@@ -140,7 +147,13 @@ public class OpenVpnService extends VpnService {
 			} catch (Exception e) {
 				Log.w(OpenVpnService.class.getName(), "Error generate pkcs12",
 						e);
+				throw e;
 			}
+
+			if (profile.getExtra() != null)
+				for (String s : profile.getExtra().trim()
+						.split(" +(?=([^\"]*\"[^\"]*\")*[^\"]*$)"))
+					config.add(s);
 
 			return config.toArray(new String[0]);
 		}
@@ -192,7 +205,6 @@ public class OpenVpnService extends VpnService {
 				UnknownHostException {
 			ByteBuffer buffer = ByteBuffer.allocateDirect(2000);
 			VpnService.Builder builder = null;
-			log = new LogQueue(63);
 			while (true) {
 				buffer.limit(0);
 				FileDescriptorHolder fd = new FileDescriptorHolder();
@@ -294,7 +306,7 @@ public class OpenVpnService extends VpnService {
 		}
 
 		@Override
-		protected Object doInBackground(Object... params) {
+		protected String doInBackground(Object... params) {
 			publishProgress(VpnState.PREPARING);
 
 			try {
@@ -307,9 +319,16 @@ public class OpenVpnService extends VpnService {
 						Thread.sleep(1000);
 					}
 				if (sock == null) {
+					InputStream stdout = process.getInputStream();
+					byte[] buffer = new byte[stdout.available()];
+					stdout.read(buffer);
+					for (String s : new String(buffer, "UTF-8")
+							.split("\\r?\\n")) {
+						log.add(s);
+					}
 					if (isProcessAlive(process))
 						process.destroy();
-					return null;
+					return "Failed to start openvpn process";
 				}
 				publishProgress(VpnState.CONNECTING);
 				try {
@@ -321,19 +340,22 @@ public class OpenVpnService extends VpnService {
 						sock = null;
 					}
 				}
+				return null;
 			} catch (Exception e) {
 				publishProgress(VpnState.UNUSABLE);
 				Log.wtf(getClass().getName(), e);
+				return e.getLocalizedMessage();
 			} finally {
 				publishProgress(VpnState.DISCONNECTING);
 				try {
-					process.waitFor();
+					if (process != null)
+						process.waitFor();
 				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
+					Log.wtf(getClass().getName(), e);
+					return e.getLocalizedMessage();
 				}
 				publishProgress(VpnState.IDLE);
 			}
-			return null;
 		}
 
 		public synchronized void interrupt() {
@@ -371,8 +393,27 @@ public class OpenVpnService extends VpnService {
 		}
 
 		@Override
-		protected void onPostExecute(Object result) {
+		protected void onPostExecute(String result) {
 			stopForeground(true);
+			if (result == null)
+				return;
+
+			Intent intent = new Intent(OpenVpnService.this, VpnSettings.class);
+			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+					| Intent.FLAG_ACTIVITY_SINGLE_TOP);
+			PendingIntent pendIntent = PendingIntent.getActivity(
+					OpenVpnService.this, 0, intent, 0);
+
+			Notification notice = new Notification.Builder(OpenVpnService.this)
+					.setSmallIcon(R.drawable.openvpn_icon).setTicker("OpenVPN")
+					.setWhen(System.currentTimeMillis())
+					.setContentTitle(getString(R.string.vpn_error))
+					.setContentText(result).setContentIntent(pendIntent)
+					.getNotification();
+
+			((NotificationManager) getSystemService(NOTIFICATION_SERVICE))
+					.notify(91684, notice);
+			Util.showLongToastMessage(OpenVpnService.this, result);
 		}
 
 		@Override
@@ -477,9 +518,67 @@ public class OpenVpnService extends VpnService {
 		}
 	};
 
+	private void restoreLog() {
+		File logfile = new File(getCacheDir(), "log");
+		if (logfile.exists()) {
+			int length;
+			InputStream is = null;
+			try {
+				is = new FileInputStream(logfile);
+				length = (int) logfile.length();
+				byte[] bytes = new byte[(int) length];
+				int offset = 0;
+				int numRead = 0;
+				while (offset < length
+						&& (numRead = is.read(bytes, offset, length - offset)) >= 0) {
+					offset += numRead;
+				}
+				if (offset == length) {
+					Parcel parcel = Parcel.obtain();
+					parcel.unmarshall(bytes, 0, length);
+					Parcelable o = parcel.readParcelable(null);
+					if (o instanceof LogQueue) {
+						log = (LogQueue) o;
+					}
+				}
+			} catch (IOException e) {
+			} finally {
+				if (is != null)
+					try {
+						is.close();
+					} catch (IOException e) {
+					}
+			}
+		}
+		if (log == null)
+			log = new LogQueue(63);
+	}
+
+	private void saveLog() {
+		if (log != null) {
+			File logfile = new File(getCacheDir(), "log");
+			Parcel parcel = Parcel.obtain();
+			parcel.writeParcelable(log, 0);
+			byte[] bytes = parcel.marshall();
+			FileOutputStream os = null;
+			try {
+				os = new FileOutputStream(logfile);
+				os.write(bytes);
+			} catch (IOException e) {
+			} finally {
+				if (os != null)
+					try {
+						os.close();
+					} catch (IOException e) {
+					}
+			}
+		}
+	}
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		restoreLog();
 		managementPath = new File(getCacheDir(), "manage");
 		executor = Executors.newSingleThreadExecutor();
 	}
@@ -495,6 +594,7 @@ public class OpenVpnService extends VpnService {
 		if (mTask != null)
 			mTask.interrupt();
 		executor = null;
+		saveLog();
 		super.onDestroy();
 	}
 }
