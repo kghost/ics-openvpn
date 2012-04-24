@@ -1,49 +1,130 @@
 package info.kghost.android.openvpn;
 
+import java.io.Serializable;
+
 import android.os.Parcel;
+import android.os.Parcelable;
 
 /**
- * The profile for Openvpn type of VPN. {@hide}
+ * A VPN profile. {@hide}
  */
-class OpenvpnProfile extends VpnProfile {
+public class OpenvpnProfile implements Parcelable, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private static final String PROTO_UDP = "udp";
-
 	private static final String PROTO_TCP = "tcp";
 
-	// Standard Settings
-	private boolean mUserAuth = false;
+	private String mName; // unique display name
+	private String mId; // unique identifier
+	private String mDomainSuffices; // space separated list
+	private String mRouteList; // space separated list
+	private String mSavedUsername;
 
+	// Standard Settings
+	private String mServerName; // VPN server name
+	private boolean mUserAuth = false;
 	private byte[] mCert;
 	private String mUserCert;
 
 	// Advanced Settings
 	private int mPort = 1194;
-
 	private String mProto = PROTO_UDP;
-
 	private boolean mUseCompLzo = false;
-
-	private boolean mSupplyAddr = false;
-
 	private boolean mRedirectGateway = false;
-
+	private boolean mSupplyAddr = false;
 	private String mLocalAddr;
-
 	private String mRemoteAddr;
-
 	private String mCipher;
-
 	private int mKeySize;
-
+	private boolean mUseTlsAuth;
+	private String mTlsAuthKey;
+	private String mTlsAuthKeyDirection;
 	private String mExtra;
 
-	private boolean mUseTlsAuth;
+	/** Sets a user-friendly name for this profile. */
+	public void setName(String name) {
+		mName = name;
+	}
 
-	private String mTlsAuthKey;
+	public String getName() {
+		return mName;
+	}
 
-	private String mTlsAuthKeyDirection;
+	/**
+	 * Sets an ID for this profile. The caller should make sure the uniqueness
+	 * of the ID.
+	 */
+	public void setId(String id) {
+		mId = id;
+	}
+
+	public String getId() {
+		return mId;
+	}
+
+	/**
+	 * Sets the name of the VPN server. Used for DNS lookup.
+	 */
+	public void setServerName(String name) {
+		mServerName = name;
+	}
+
+	public String getServerName() {
+		return mServerName;
+	}
+
+	/**
+	 * Sets the domain suffices for DNS resolution.
+	 * 
+	 * @param entries
+	 *            a comma-separated list of domain suffices
+	 */
+	public void setDomainSuffices(String entries) {
+		mDomainSuffices = entries;
+	}
+
+	public String getDomainSuffices() {
+		return mDomainSuffices;
+	}
+
+	/**
+	 * Sets the routing info for this VPN connection.
+	 * 
+	 * @param entries
+	 *            a comma-separated list of routes; each entry is in the format
+	 *            of "(network address)/(network mask)"
+	 */
+	public void setRouteList(String entries) {
+		mRouteList = entries;
+	}
+
+	public String getRouteList() {
+		return mRouteList;
+	}
+
+	public void setSavedUsername(String name) {
+		mSavedUsername = name;
+	}
+
+	public String getSavedUsername() {
+		return mSavedUsername;
+	}
+
+	public static final Parcelable.Creator<OpenvpnProfile> CREATOR = new Parcelable.Creator<OpenvpnProfile>() {
+		public OpenvpnProfile createFromParcel(Parcel in) {
+			OpenvpnProfile p = new OpenvpnProfile();
+			p.readFromParcel(in);
+			return p;
+		}
+
+		public OpenvpnProfile[] newArray(int size) {
+			return new OpenvpnProfile[size];
+		}
+	};
+
+	public int describeContents() {
+		return 0;
+	}
 
 	public void setPort(String port) {
 		try {
@@ -196,9 +277,13 @@ class OpenvpnProfile extends VpnProfile {
 		return mExtra;
 	}
 
-	@Override
 	protected void readFromParcel(Parcel in) {
-		super.readFromParcel(in);
+		mName = in.readString();
+		mId = in.readString();
+		mServerName = in.readString();
+		mDomainSuffices = in.readString();
+		mRouteList = in.readString();
+		mSavedUsername = in.readString();
 		mPort = in.readInt();
 		mProto = in.readString();
 		mUserAuth = in.readInt() == 1;
@@ -220,7 +305,12 @@ class OpenvpnProfile extends VpnProfile {
 
 	@Override
 	public void writeToParcel(Parcel parcel, int flags) {
-		super.writeToParcel(parcel, flags);
+		parcel.writeString(mName);
+		parcel.writeString(mId);
+		parcel.writeString(mServerName);
+		parcel.writeString(mDomainSuffices);
+		parcel.writeString(mRouteList);
+		parcel.writeString(mSavedUsername);
 		parcel.writeInt(mPort);
 		parcel.writeString(mProto);
 		parcel.writeInt(mUserAuth ? 1 : 0);

@@ -437,7 +437,7 @@ public class OpenVpnService extends VpnService {
 
 	private final IVpnService.Stub mBinder = new IVpnService.Stub() {
 		@Override
-		public boolean connect(VpnProfile profile, String username,
+		public boolean connect(OpenvpnProfile profile, String username,
 				String password) throws RemoteException {
 			if (profile == null)
 				return false;

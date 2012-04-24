@@ -1,7 +1,7 @@
 package info.kghost.android.openvpn;
 
 import info.kghost.android.openvpn.LogQueue;
-import info.kghost.android.openvpn.VpnProfile;
+import info.kghost.android.openvpn.OpenvpnProfile;
 import info.kghost.android.openvpn.VpnStatus;
 
 /**
@@ -13,7 +13,7 @@ interface IVpnService {
      * Sets up the VPN connection.
      * @param profile the profile object
      */
-    boolean connect(in VpnProfile profile, in String username, in String password);
+    boolean connect(in OpenvpnProfile profile, in String username, in String password);
 
     /**
      * Tears down the VPN connection.

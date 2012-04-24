@@ -75,9 +75,9 @@ public class VpnSettings extends PreferenceActivity {
 
 	// profile name --> VpnPreference
 	private Map<String, VpnPreference> mVpnPreferenceMap;
-	private List<VpnProfile> mVpnProfileList;
+	private List<OpenvpnProfile> mVpnProfileList;
 
-	private VpnProfile mConnectingProfile;
+	private OpenvpnProfile mConnectingProfile;
 	private String mConnectingUsername;
 	private String mConnectingPassword;
 
@@ -224,7 +224,7 @@ public class VpnSettings extends PreferenceActivity {
 			ContextMenuInfo menuInfo) {
 		super.onCreateContextMenu(menu, v, menuInfo);
 
-		VpnProfile p = getProfile(getProfilePositionFrom((AdapterContextMenuInfo) menuInfo));
+		OpenvpnProfile p = getProfile(getProfilePositionFrom((AdapterContextMenuInfo) menuInfo));
 		if (p != null) {
 			menu.setHeaderTitle(p.getName());
 
@@ -243,7 +243,7 @@ public class VpnSettings extends PreferenceActivity {
 	public boolean onContextItemSelected(MenuItem item) {
 		int position = getProfilePositionFrom((AdapterContextMenuInfo) item
 				.getMenuInfo());
-		VpnProfile p = getProfile(position);
+		OpenvpnProfile p = getProfile(position);
 
 		switch (item.getItemId()) {
 		case CONTEXT_MENU_CONNECT_ID:
@@ -293,7 +293,7 @@ public class VpnSettings extends PreferenceActivity {
 				Log.d(TAG, "no result returned by editor");
 				return;
 			}
-			VpnProfile p = data.getParcelableExtra(KEY_VPN_PROFILE);
+			OpenvpnProfile p = data.getParcelableExtra(KEY_VPN_PROFILE);
 			if (p == null) {
 				Log.e(TAG, "null object returned by editor");
 				return;
@@ -301,7 +301,7 @@ public class VpnSettings extends PreferenceActivity {
 
 			int index = getProfileIndexFromId(p.getId());
 			if (checkDuplicateName(p, index)) {
-				final VpnProfile profile = p;
+				final OpenvpnProfile profile = p;
 				Util.showErrorMessage(this, String.format(
 						getString(R.string.vpn_error_duplicate_name),
 						p.getName()), new DialogInterface.OnClickListener() {
@@ -324,7 +324,7 @@ public class VpnSettings extends PreferenceActivity {
 							p.getName()));
 				}
 			} catch (IOException e) {
-				final VpnProfile profile = p;
+				final OpenvpnProfile profile = p;
 				Util.showErrorMessage(this, e + ": " + e.getLocalizedMessage(),
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int w) {
@@ -356,7 +356,7 @@ public class VpnSettings extends PreferenceActivity {
 		}
 	}
 
-	private boolean canDisconnect(VpnProfile p) {
+	private boolean canDisconnect(OpenvpnProfile p) {
 		if (mStatus == null)
 			return false;
 		switch (mStatus.state) {
@@ -444,7 +444,7 @@ public class VpnSettings extends PreferenceActivity {
 
 	private int getProfileIndexFromId(String id) {
 		int index = 0;
-		for (VpnProfile p : mVpnProfileList) {
+		for (OpenvpnProfile p : mVpnProfileList) {
 			if (p.getId().equals(id)) {
 				return index;
 			} else {
@@ -456,7 +456,7 @@ public class VpnSettings extends PreferenceActivity {
 
 	// Replaces the profile at index in mVpnProfileList with p.
 	// Returns true if p's name is a duplicate.
-	private boolean checkDuplicateName(VpnProfile p, int index) {
+	private boolean checkDuplicateName(OpenvpnProfile p, int index) {
 		VpnPreference pref = mVpnPreferenceMap.get(p.getName());
 		if ((pref != null) && (index >= 0) && (index < mVpnProfileList.size())) {
 			// not a duplicate if p is to replace the profile at index
@@ -472,12 +472,12 @@ public class VpnSettings extends PreferenceActivity {
 	}
 
 	// position: position in mVpnProfileList
-	private VpnProfile getProfile(int position) {
+	private OpenvpnProfile getProfile(int position) {
 		return ((position >= 0) ? mVpnProfileList.get(position) : null);
 	}
 
 	// position: position in mVpnProfileList
-	private void deleteProfile(final VpnProfile p) {
+	private void deleteProfile(final OpenvpnProfile p) {
 		DeleteConformDialog dialog = new DeleteConformDialog();
 		dialog.setId(p.getId());
 		showDialog(dialog);
@@ -485,7 +485,7 @@ public class VpnSettings extends PreferenceActivity {
 
 	// Randomly generates an ID for the profile.
 	// The ID is unique and only set once when the profile is created.
-	private void setProfileId(VpnProfile profile) {
+	private void setProfileId(OpenvpnProfile profile) {
 		String id;
 
 		while (true) {
@@ -494,7 +494,7 @@ public class VpnSettings extends PreferenceActivity {
 			if (id.length() >= 8)
 				break;
 		}
-		for (VpnProfile p : mVpnProfileList) {
+		for (OpenvpnProfile p : mVpnProfileList) {
 			if (p.getId().equals(id)) {
 				setProfileId(profile);
 				return;
@@ -503,7 +503,7 @@ public class VpnSettings extends PreferenceActivity {
 		profile.setId(id);
 	}
 
-	private void addProfile(VpnProfile p) throws IOException {
+	private void addProfile(OpenvpnProfile p) throws IOException {
 		setProfileId(p);
 		saveProfileToStorage(p);
 
@@ -512,7 +512,7 @@ public class VpnSettings extends PreferenceActivity {
 	}
 
 	// Adds a preference in mVpnListContainer
-	private VpnPreference addPreferenceFor(VpnProfile p) {
+	private VpnPreference addPreferenceFor(OpenvpnProfile p) {
 		VpnPreference pref = new VpnPreference(this, p);
 		mVpnPreferenceMap.put(p.getName(), pref);
 		mVpnListContainer.addPreference(pref);
@@ -529,9 +529,9 @@ public class VpnSettings extends PreferenceActivity {
 	}
 
 	// index: index to mVpnProfileList
-	private void replaceProfile(int index, VpnProfile p) throws IOException {
+	private void replaceProfile(int index, OpenvpnProfile p) throws IOException {
 		Map<String, VpnPreference> map = mVpnPreferenceMap;
-		VpnProfile oldProfile = mVpnProfileList.set(index, p);
+		OpenvpnProfile oldProfile = mVpnProfileList.set(index, p);
 		VpnPreference pref = map.remove(oldProfile.getName());
 		if (pref.mProfile != oldProfile) {
 			throw new RuntimeException("inconsistent state!");
@@ -551,13 +551,13 @@ public class VpnSettings extends PreferenceActivity {
 		map.put(p.getName(), pref);
 	}
 
-	private void startVpnEditor(final VpnProfile profile) {
+	private void startVpnEditor(final OpenvpnProfile profile) {
 		Intent intent = new Intent(this, VpnEditor.class);
 		intent.putExtra(KEY_VPN_PROFILE, (Parcelable) profile);
 		startActivityForResult(intent, REQUEST_ADD_OR_EDIT_PROFILE);
 	}
 
-	private synchronized void connect(final VpnProfile p) {
+	private synchronized void connect(final OpenvpnProfile p) {
 		if (((OpenvpnProfile) p).getUserAuth()) {
 			mConnectingProfile = p;
 			AuthDialog dialog = new AuthDialog();
@@ -568,7 +568,7 @@ public class VpnSettings extends PreferenceActivity {
 		}
 	}
 
-	private synchronized void connect(final VpnProfile p, String username,
+	private synchronized void connect(final OpenvpnProfile p, String username,
 			String password) {
 		Intent intent = VpnService.prepare(this);
 		mConnectingProfile = p;
@@ -594,18 +594,18 @@ public class VpnSettings extends PreferenceActivity {
 					Toast.LENGTH_LONG);
 	}
 
-	private synchronized void connectOrDisconnect(final VpnProfile p) {
+	private synchronized void connectOrDisconnect(final OpenvpnProfile p) {
 		if (mStatus != null && mStatus.state == VpnStatus.VpnState.IDLE)
 			connect(p);
 		else
 			disconnect();
 	}
 
-	private File getProfileDir(VpnProfile p) {
+	private File getProfileDir(OpenvpnProfile p) {
 		return new File(PROFILES_ROOT, p.getId());
 	}
 
-	private void saveProfileToStorage(VpnProfile p) throws IOException {
+	private void saveProfileToStorage(OpenvpnProfile p) throws IOException {
 		File f = getProfileDir(p);
 		if (!f.exists())
 			f.mkdirs();
@@ -615,14 +615,14 @@ public class VpnSettings extends PreferenceActivity {
 		oos.close();
 	}
 
-	private void removeProfileFromStorage(VpnProfile p) {
+	private void removeProfileFromStorage(OpenvpnProfile p) {
 		Util.deleteFile(getProfileDir(p));
 	}
 
 	private void retrieveVpnListFromStorage() {
 		mVpnPreferenceMap = new LinkedHashMap<String, VpnPreference>();
 		mVpnProfileList = Collections
-				.synchronizedList(new ArrayList<VpnProfile>());
+				.synchronizedList(new ArrayList<OpenvpnProfile>());
 		mVpnListContainer.removeAll();
 
 		File root = PROFILES_ROOT;
@@ -634,7 +634,7 @@ public class VpnSettings extends PreferenceActivity {
 			if (!f.exists())
 				continue;
 			try {
-				VpnProfile p = deserialize(f);
+				OpenvpnProfile p = deserialize(f);
 				if (p == null)
 					continue;
 				if (!checkIdConsistency(dir, p))
@@ -645,9 +645,9 @@ public class VpnSettings extends PreferenceActivity {
 				Log.e(TAG, "retrieveVpnListFromStorage()", e);
 			}
 		}
-		Collections.sort(mVpnProfileList, new Comparator<VpnProfile>() {
+		Collections.sort(mVpnProfileList, new Comparator<OpenvpnProfile>() {
 			@Override
-			public int compare(VpnProfile p1, VpnProfile p2) {
+			public int compare(OpenvpnProfile p1, OpenvpnProfile p2) {
 				return p1.getName().compareTo(p2.getName());
 			}
 
@@ -657,14 +657,14 @@ public class VpnSettings extends PreferenceActivity {
 				return false;
 			}
 		});
-		for (VpnProfile p : mVpnProfileList) {
+		for (OpenvpnProfile p : mVpnProfileList) {
 			addPreferenceFor(p);
 		}
 	}
 
 	// A sanity check. Returns true if the profile directory name and profile ID
 	// are consistent.
-	private boolean checkIdConsistency(String dirName, VpnProfile p) {
+	private boolean checkIdConsistency(String dirName, OpenvpnProfile p) {
 		if (!dirName.equals(p.getId())) {
 			Log.d(TAG, "ID inconsistent: " + dirName + " vs " + p.getId());
 			return false;
@@ -673,11 +673,11 @@ public class VpnSettings extends PreferenceActivity {
 		}
 	}
 
-	private VpnProfile deserialize(File profileObjectFile) throws IOException {
+	private OpenvpnProfile deserialize(File profileObjectFile) throws IOException {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
 					profileObjectFile));
-			VpnProfile p = (VpnProfile) ois.readObject();
+			OpenvpnProfile p = (OpenvpnProfile) ois.readObject();
 			ois.close();
 			return p;
 		} catch (ClassNotFoundException e) {
@@ -687,14 +687,14 @@ public class VpnSettings extends PreferenceActivity {
 	}
 
 	private static class VpnPreference extends Preference {
-		VpnProfile mProfile;
+		OpenvpnProfile mProfile;
 
-		VpnPreference(Context c, VpnProfile p) {
+		VpnPreference(Context c, OpenvpnProfile p) {
 			super(c);
 			setProfile(p);
 		}
 
-		void setProfile(VpnProfile p) {
+		void setProfile(OpenvpnProfile p) {
 			mProfile = p;
 			setTitle(p.getName());
 		}
@@ -726,7 +726,7 @@ public class VpnSettings extends PreferenceActivity {
 	public void doDeleteProfile(String id) {
 		int position = getProfileIndexFromId(id);
 		if (position >= 0) {
-			VpnProfile p = mVpnProfileList.remove(position);
+			OpenvpnProfile p = mVpnProfileList.remove(position);
 			VpnPreference pref = mVpnPreferenceMap.remove(p.getName());
 			mVpnListContainer.removePreference(pref);
 			removeProfileFromStorage(p);

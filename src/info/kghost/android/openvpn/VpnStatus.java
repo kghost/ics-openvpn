@@ -17,7 +17,6 @@ import android.os.Parcelable;
  * {@link UNKNOWN} state indicates that the profile state is to be determined.
  * {@hide}
  */
-
 public class VpnStatus implements Parcelable {
 	public enum VpnState {
 		PREPARING, CONNECTING, DISCONNECTING, CANCELLED, CONNECTED, IDLE, UNUSABLE, UNKNOWN
@@ -25,6 +24,7 @@ public class VpnStatus implements Parcelable {
 
 	public String name;
 	public VpnState state;
+	public String error;
 
 	public static final Parcelable.Creator<VpnStatus> CREATOR = new Parcelable.Creator<VpnStatus>() {
 		public VpnStatus createFromParcel(Parcel in) {
@@ -41,11 +41,13 @@ public class VpnStatus implements Parcelable {
 	public void writeToParcel(Parcel parcel, int flags) {
 		parcel.writeString(name);
 		parcel.writeInt(state.ordinal());
+		parcel.writeString(error);
 	}
 
 	protected void readFromParcel(Parcel parcel) {
 		name = parcel.readString();
 		state = VpnState.values()[parcel.readInt()];
+		error = parcel.readString();
 	}
 
 	public int describeContents() {

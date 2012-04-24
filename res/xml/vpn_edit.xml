@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:settings="http://schemas.android.com/apk/res/com.android.settings">
+    xmlns:settings="http://schemas.android.com/apk/res/com.android.settings" >
 
     <EditTextPreference
-        android:key="vpn_name"
-        android:title="@string/vpn_name"
         android:dialogTitle="@string/vpn_name"
-        android:singleLine="true"/>
+        android:inputType="textCapSentences"
+        android:key="vpn_name"
+        android:singleLine="true"
+        android:title="@string/vpn_name" />
+    <EditTextPreference
+        android:inputType="textUri"
+        android:key="vpn_server_name"
+        android:summary="@string/vpn_vpn_server"
+        android:title="@string/vpn_vpn_server_title" />
 
-</PreferenceScreen>   
+    <CheckBoxPreference
+        android:key="vpn_userauth"
+        android:summary="@string/vpn_openvpn_userauth_summary"
+        android:title="@string/vpn_openvpn_userauth" />
+
+</PreferenceScreen>

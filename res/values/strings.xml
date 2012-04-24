@@ -234,7 +234,8 @@
 	<string name="openvpn_installer_openvpn_not_found">OpenVpn binary not exists</string>
 	<string name="openvpn_installer_installing">Installing OpenVpn…</string>
 	<string name="openvpn_installer_checking">Checking OpenVpn…</string>
-	
+	<string name="openvpn_error_cert_file_error">Can\'t parse certification file</string>
+		
 	<string name="openvpn_log_dialog_title">Log</string>
 	<string name="vpn_view_log">View Log</string>
 </resources>
