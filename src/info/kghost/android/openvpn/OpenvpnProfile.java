@@ -30,6 +30,7 @@ public class OpenvpnProfile implements Parcelable, Serializable {
 	private int mPort = 1194;
 	private String mProto = PROTO_UDP;
 	private boolean mUseCompLzo = false;
+	private String mNsCertType = "server";
 	private boolean mRedirectGateway = false;
 	private boolean mSupplyAddr = false;
 	private String mLocalAddr;
@@ -190,6 +191,14 @@ public class OpenvpnProfile implements Parcelable, Serializable {
 		return mUseCompLzo;
 	}
 
+	public String getNsCertType() {
+		return mNsCertType;
+	}
+
+	public void setNsCertType(String type) {
+		this.mNsCertType = type;
+	}
+
 	public void setRedirectGateway(boolean b) {
 		mRedirectGateway = b;
 	}
@@ -291,6 +300,7 @@ public class OpenvpnProfile implements Parcelable, Serializable {
 		in.readByteArray(mCert);
 		mUserCert = in.readString();
 		mUseCompLzo = in.readInt() == 1;
+		mNsCertType = in.readString();
 		mRedirectGateway = in.readInt() == 1;
 		mSupplyAddr = in.readInt() == 1;
 		mLocalAddr = in.readString();
@@ -323,6 +333,7 @@ public class OpenvpnProfile implements Parcelable, Serializable {
 		}
 		parcel.writeString(mUserCert);
 		parcel.writeInt(mUseCompLzo ? 1 : 0);
+		parcel.writeString(mNsCertType);
 		parcel.writeInt(mRedirectGateway ? 1 : 0);
 		parcel.writeInt(mSupplyAddr ? 1 : 0);
 		parcel.writeString(mLocalAddr);

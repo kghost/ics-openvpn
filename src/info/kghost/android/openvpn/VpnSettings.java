@@ -122,7 +122,7 @@ public class VpnSettings extends PreferenceActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		PROFILES_ROOT = getFilesDir();
+		PROFILES_ROOT = new File(getFilesDir(), "V2");
 
 		addPreferencesFromResource(R.xml.vpn_settings);
 
@@ -673,7 +673,8 @@ public class VpnSettings extends PreferenceActivity {
 		}
 	}
 
-	private OpenvpnProfile deserialize(File profileObjectFile) throws IOException {
+	private OpenvpnProfile deserialize(File profileObjectFile)
+			throws IOException {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
 					profileObjectFile));

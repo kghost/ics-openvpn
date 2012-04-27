@@ -20,6 +20,14 @@
         android:key="set_comp_lzo"
         android:summary="@string/vpn_openvpn_comp_lzo_summary"
         android:title="@string/vpn_openvpn_comp_lzo" />
+
+    <ListPreference
+        android:dialogTitle="@string/vpn_openvpn_ns_cert_type"
+        android:entries="@array/vpn_openvpn_ns_cert_type_entries"
+        android:entryValues="@array/vpn_openvpn_ns_cert_type_entries_values"
+        android:key="set_ns_cert_type"
+        android:title="@string/vpn_openvpn_ns_cert_type" />
+
     <CheckBoxPreference
         android:key="set_redirect_gateway"
         android:summary="@string/vpn_openvpn_redirect_gateway_summary"

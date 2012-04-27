@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
     <!-- openvpn advanced menu protocol entries -->
     <!-- Do not translate. -->
     <string-array name="vpn_openvpn_protocol_entries" translatable="false">
@@ -13,7 +14,17 @@
         <item>tun</item>
         <item>tap</item>
     </string-array>
-
+    <string-array name="vpn_openvpn_ns_cert_type_entries">
+        <item>None</item>
+        <item>Server (Client Default)</item>
+        <item>Client</item>
+    </string-array>
+    <!-- Do not translate. -->
+    <string-array name="vpn_openvpn_ns_cert_type_entries_values" translatable="false">
+        <item>None</item>
+        <item>server</item>
+        <item>client</item>
+    </string-array>
     <string-array name="vpn_openvpn_set_tls_auth_key_direction_entries">
         <item>None</item>
         <item>0</item>
@@ -26,4 +37,5 @@
         <item>0</item>
         <item>1</item>
     </string-array>
+
 </resources>

@@ -14,6 +14,7 @@ public class AdvancedSettings extends PreferenceActivity {
 	private static final String KEY_PORT = "set_port";
 	private static final String KEY_PROTO = "set_protocol";
 	private static final String KEY_COMP_LZO = "set_comp_lzo";
+	private static final String KEY_NS_CERT_TYPE = "set_ns_cert_type";
 	private static final String KEY_REDIRECT_GATEWAY = "set_redirect_gateway";
 	private static final String KEY_SET_ADDR = "set_addr";
 	private static final String KEY_LOCAL_ADDR = "set_local_addr";
@@ -28,6 +29,7 @@ public class AdvancedSettings extends PreferenceActivity {
 	private EditTextPreference mPort;
 	private ListPreference mProto;
 	private CheckBoxPreference mCompLzo;
+	private ListPreference mNsCertType;
 	private CheckBoxPreference mRedirectGateway;
 	private CheckBoxPreference mSetAddr;
 	private EditTextPreference mLocalAddr;
@@ -52,6 +54,7 @@ public class AdvancedSettings extends PreferenceActivity {
 		mPort = (EditTextPreference) findPreference(KEY_PORT);
 		mProto = (ListPreference) findPreference(KEY_PROTO);
 		mCompLzo = (CheckBoxPreference) findPreference(KEY_COMP_LZO);
+		mNsCertType = (ListPreference) findPreference(KEY_NS_CERT_TYPE);
 		mRedirectGateway = (CheckBoxPreference) findPreference(KEY_REDIRECT_GATEWAY);
 		mSetAddr = (CheckBoxPreference) findPreference(KEY_SET_ADDR);
 		mLocalAddr = (EditTextPreference) findPreference(KEY_LOCAL_ADDR);
@@ -98,6 +101,21 @@ public class AdvancedSettings extends PreferenceActivity {
 				return true;
 			}
 		});
+
+		mNsCertType.setValue(profile.getNsCertType());
+		mNsCertType.setSummary(mNsCertType.getEntry());
+		mNsCertType
+				.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+					public boolean onPreferenceChange(Preference pref,
+							Object newValue) {
+						String name = (String) newValue;
+						name.trim();
+						profile.setNsCertType(name);
+						mNsCertType.setValue(profile.getNsCertType());
+						mNsCertType.setSummary(mNsCertType.getEntry());
+						return true;
+					}
+				});
 
 		mRedirectGateway.setChecked(profile.getRedirectGateway());
 		mRedirectGateway

@@ -96,9 +96,6 @@ public class OpenVpnService extends VpnService {
 				config.add("--nobind");
 			}
 
-			config.add("--ns-cert-type");
-			config.add("server");
-
 			config.add("--proto");
 			config.add(profile.getProto());
 
@@ -108,6 +105,11 @@ public class OpenVpnService extends VpnService {
 
 			if (profile.getUseCompLzo())
 				config.add("--comp-lzo");
+
+			if (!"None".equals(profile.getNsCertType())) {
+				config.add("--ns-cert-type");
+				config.add(profile.getNsCertType());
+			}
 
 			if (profile.getCipher() != null) {
 				config.add("--cipher");

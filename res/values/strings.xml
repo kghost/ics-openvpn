@@ -1,239 +1,188 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-	<string name="app">OpenVPN</string>
 
-	<!-- Menu option to Wi-Fi advanced settings -->
-	<string name="wifi_menu_advanced">Advanced</string>
+    <string name="app">OpenVPN</string>
 
-	<string name="vpn_settings_activity_title">VPN settings</string>
+    <!-- Menu option to Wi-Fi advanced settings -->
+    <string name="wifi_menu_advanced">Advanced</string>
+    <string name="vpn_settings_activity_title">VPN settings</string>
 
-	<!-- Title of VPN connect dialog -->
-	<string name="vpn_connect_to">
-		Connect to
-		<xliff:g id="name" example="Work Network">%s</xliff:g>
-	</string>
-	<!-- In VPN connect dialog, for inputing username and password -->
-	<string name="vpn_username_dialog_title">Auth</string>
-	<string name="vpn_username_colon">Username:</string>
-	<string name="vpn_password_colon">Password:</string>
-	<string name="vpn_a_username">a username</string>
-	<string name="vpn_a_password">a password</string>
+    <!-- Title of VPN connect dialog -->
+    <string name="vpn_connect_to">		Connect to<xliff:g id="name" example="Work Network">%s</xliff:g></string>
+    <!-- In VPN connect dialog, for inputing username and password -->
+    <string name="vpn_username_dialog_title">Auth</string>
+    <string name="vpn_username_colon">Username:</string>
+    <string name="vpn_password_colon">Password:</string>
+    <string name="vpn_a_username">a username</string>
+    <string name="vpn_a_password">a password</string>
 
-	<!-- In VPN connect dialog where user may check to remember the username 
-		entered -->
-	<string name="vpn_save_username">Remember username</string>
+    <!--
+         In VPN connect dialog where user may check to remember the username 
+		entered
+    -->
+    <string name="vpn_save_username">Remember username</string>
+    <string name="vpn_connect_button">Connect</string>
+    <string name="vpn_yes_button">Yes</string>
+    <string name="vpn_no_button">No</string>
+    <string name="vpn_back_button">Back</string>
+    <string name="vpn_mistake_button">No</string>
+    <string name="vpn_menu_done">Save</string>
+    <string name="vpn_menu_cancel">Cancel</string>
+    <string name="vpn_menu_revert">Revert</string>
+    <string name="vpn_menu_connect">Connect to network</string>
+    <string name="vpn_menu_disconnect">Disconnect from network</string>
+    <string name="vpn_menu_edit">Edit network</string>
+    <string name="vpn_menu_delete">Delete network</string>
 
-	<string name="vpn_connect_button">Connect</string>
-	<string name="vpn_yes_button">Yes</string>
-	<string name="vpn_no_button">No</string>
-	<string name="vpn_back_button">Back</string>
-	<string name="vpn_mistake_button">No</string>
-
-	<string name="vpn_menu_done">Save</string>
-	<string name="vpn_menu_cancel">Cancel</string>
-	<string name="vpn_menu_revert">Revert</string>
-	<string name="vpn_menu_connect">Connect to network</string>
-	<string name="vpn_menu_disconnect">Disconnect from network</string>
-	<string name="vpn_menu_edit">Edit network</string>
-	<string name="vpn_menu_delete">Delete network</string>
-
-	<!-- VPN error dialog messages -->
-	<string name="vpn_error_miss_entering">
-		You must enter
-		<xliff:g id="code">%s</xliff:g>
-		.
-	</string>
-	<string name="vpn_error_miss_selecting">
-		You must select
-		<xliff:g id="option">%s</xliff:g>
-		.
-	</string>
-	<string name="vpn_error_duplicate_name">
-		The VPN name \'
-		<xliff:g id="name" example="Home Network">%s</xliff:g>
-		\' already exists. Find another name.
-	</string>
-	<string name="vpn_confirm_profile_deletion">Are you sure you want to delete this VPN?</string>
-	<string name="vpn_confirm_add_profile_cancellation">Are you sure you don\'t want to create this
+    <!-- VPN error dialog messages -->
+    <string name="vpn_error_miss_entering">		You must enter<xliff:g id="code">%s</xliff:g>		.</string>
+    <string name="vpn_error_miss_selecting">		You must select<xliff:g id="option">%s</xliff:g>		.</string>
+    <string name="vpn_error_duplicate_name">		The VPN name \'<xliff:g id="name" example="Home Network">%s</xliff:g>		\' already exists. Find another name.</string>
+    <string name="vpn_confirm_profile_deletion">Are you sure you want to delete this VPN?</string>
+    <string name="vpn_confirm_add_profile_cancellation">Are you sure you don\'t want to create this
 		profile?</string>
-	<string name="vpn_confirm_edit_profile_cancellation">Are you sure you want to discard the changes made
+    <string name="vpn_confirm_edit_profile_cancellation">Are you sure you want to discard the changes made
 		to this profile?</string>
-	<string name="vpn_confirm_reconnect">Unable to connect to the network. Do you want to
+    <string name="vpn_confirm_reconnect">Unable to connect to the network. Do you want to
 		try again?</string>
-	<string name="vpn_reconnect_from_lost">Connection lost. Do you want to connect again?</string>
-	<string name="vpn_unknown_server_dialog_msg">Server name cannot be resolved. Do you want to
+    <string name="vpn_reconnect_from_lost">Connection lost. Do you want to connect again?</string>
+    <string name="vpn_unknown_server_dialog_msg">Server name cannot be resolved. Do you want to
 		check your server name setting?</string>
-	<string name="vpn_challenge_error_dialog_msg">Challenge error. Do you want to check your secret
+    <string name="vpn_challenge_error_dialog_msg">Challenge error. Do you want to check your secret
 		setting?</string>
-	<string name="vpn_secret_not_set_dialog_msg">One or more secrets are missing in this VPN
+    <string name="vpn_secret_not_set_dialog_msg">One or more secrets are missing in this VPN
 		configuration. Do you want to check your secret setting?</string>
-	<string name="vpn_auth_error_dialog_msg">The username or password you entered is incorrect.
+    <string name="vpn_auth_error_dialog_msg">The username or password you entered is incorrect.
 		Do you want to try again?</string>
-	<string name="vpn_remote_hung_up_error_dialog_msg">Server hung up. The username or password you
+    <string name="vpn_remote_hung_up_error_dialog_msg">Server hung up. The username or password you
 		entered could be incorrect. Do you want to try again?</string>
-	<string name="vpn_remote_ppp_hung_up_error_dialog_msg">Server hung up. It is possible that you are behind
+    <string name="vpn_remote_ppp_hung_up_error_dialog_msg">Server hung up. It is possible that you are behind
 		a firewall that prevents you from connecting to the server. Do you
 		want to try again?</string>
-	<string name="vpn_error">Connect error</string>
+    <string name="vpn_error">Connect error</string>
 
-	<!-- VPN type selection activity title -->
-	<string name="vpn_type_title">Add VPN</string>
-	<string name="openvpn_installed_info">Installed OpenVPN</string>
-		<!-- "Add VPN" preference title -->
-	<string name="vpn_add_new_vpn">Add VPN</string>
-	<!-- VPN profile editor title when adding a new profile -->
-	<string name="vpn_edit_title_add">
-		Add
-		<xliff:g id="name">%s</xliff:g>
-		VPN
-	</string>
-	<!-- VPN profile editor title when editing an existing profile -->
-	<string name="vpn_edit_title_edit">
-		<xliff:g id="name">%s</xliff:g>
-		details
-	</string>
-	<!-- Preference group title for a list of VPN profiles -->
-	<string name="vpns">VPNs</string>
-	<!-- Preference summary text when VPN is connecting -->
-	<string name="vpn_preparing">Preparing\u2026</string>
-	<!-- Preference summary text when VPN is connecting -->
-	<string name="vpn_connecting">Connecting\u2026</string>
-	<!-- Preference summary text when VPN is disconnecting -->
-	<string name="vpn_disconnecting">Disconnecting\u2026</string>
-	<!-- Preference summary text when VPN is disconnecting -->
-	<string name="vpn_disconnected">Disconnected</string>
-	<!-- Preference summary text when VPN is connected -->
-	<string name="vpn_connected">Connected</string>
-	<!-- Preference summary text when VPN is unusable -->
-	<string name="vpn_unusable">Unusable</string>
-	<!-- Preference summary text when VPN is not connected -->
-	<string name="vpn_connect_hint">Connect to network</string>
+    <!-- VPN type selection activity title -->
+    <string name="vpn_type_title">Add VPN</string>
+    <string name="openvpn_installed_info">Installed OpenVPN</string>
+    <!-- "Add VPN" preference title -->
+    <string name="vpn_add_new_vpn">Add VPN</string>
+    <!-- VPN profile editor title when adding a new profile -->
+    <string name="vpn_edit_title_add">		Add<xliff:g id="name">%s</xliff:g>		VPN</string>
+    <!-- VPN profile editor title when editing an existing profile -->
+    <string name="vpn_edit_title_edit"><xliff:g id="name">%s</xliff:g>		details</string>
+    <!-- Preference group title for a list of VPN profiles -->
+    <string name="vpns">VPNs</string>
+    <!-- Preference summary text when VPN is connecting -->
+    <string name="vpn_preparing">Preparing\u2026</string>
+    <!-- Preference summary text when VPN is connecting -->
+    <string name="vpn_connecting">Connecting\u2026</string>
+    <!-- Preference summary text when VPN is disconnecting -->
+    <string name="vpn_disconnecting">Disconnecting\u2026</string>
+    <!-- Preference summary text when VPN is disconnecting -->
+    <string name="vpn_disconnected">Disconnected</string>
+    <!-- Preference summary text when VPN is connected -->
+    <string name="vpn_connected">Connected</string>
+    <!-- Preference summary text when VPN is unusable -->
+    <string name="vpn_unusable">Unusable</string>
+    <!-- Preference summary text when VPN is not connected -->
+    <string name="vpn_connect_hint">Connect to network</string>
 
-	<!-- Name of a VPN profile -->
-	<string name="vpn_name">VPN name</string>
-	<string name="vpn_a_name">a VPN name</string>
+    <!-- Name of a VPN profile -->
+    <string name="vpn_name">VPN name</string>
+    <string name="vpn_a_name">a VPN name</string>
 
-	<!-- Toast message shown when a profile is added -->
-	<string name="vpn_profile_added">
-		\'
-		<xliff:g id="name">%s</xliff:g>
-		\' is added
-	</string>
-	<!-- Toast message shown when changes of a profile is saved -->
-	<string name="vpn_profile_replaced">
-		Changes are made to \'
-		<xliff:g id="name">%s</xliff:g>
-		\'
-	</string>
+    <!-- Toast message shown when a profile is added -->
+    <string name="vpn_profile_added">		\'<xliff:g id="name">%s</xliff:g>		\' is added</string>
+    <!-- Toast message shown when changes of a profile is saved -->
+    <string name="vpn_profile_replaced">		Changes are made to \'<xliff:g id="name">%s</xliff:g>		\'</string>
 
-	<!-- Preference title -->
-	<string name="vpn_user_certificate_title">Set user certificate</string>
-	<!-- Complete term -->
-	<string name="vpn_user_certificate">User certificate</string>
-	<string name="vpn_a_user_certificate">a user certificate</string>
+    <!-- Preference title -->
+    <string name="vpn_user_certificate_title">Set user certificate</string>
+    <!-- Complete term -->
+    <string name="vpn_user_certificate">User certificate</string>
+    <string name="vpn_a_user_certificate">a user certificate</string>
 
-	<!-- Preference title -->
-	<string name="vpn_ca_certificate_title">Set CA certificate</string>
-	<!-- Complete term -->
-	<string name="vpn_ca_certificate">Certificate authority (CA) certificate</string>
-	<string name="vpn_a_ca_certificate">a CA certificate</string>
-	<string name="vpn_openvpn_port">Server port</string>
-	<string name="vpn_openvpn_protocol">Protocol to use</string>
-	<string name="vpn_openvpn_device">Device to use</string>
-	<string name="vpn_openvpn_userauth">User authentication</string>
-	<string name="vpn_openvpn_userauth_summary">Set if additional username/password authentication
+    <!-- Preference title -->
+    <string name="vpn_ca_certificate_title">Set CA certificate</string>
+    <!-- Complete term -->
+    <string name="vpn_ca_certificate">Certificate authority (CA) certificate</string>
+    <string name="vpn_a_ca_certificate">a CA certificate</string>
+    <string name="vpn_openvpn_port">Server port</string>
+    <string name="vpn_openvpn_protocol">Protocol to use</string>
+    <string name="vpn_openvpn_device">Device to use</string>
+    <string name="vpn_openvpn_userauth">User authentication</string>
+    <string name="vpn_openvpn_userauth_summary">Set if additional username/password authentication
 		needs to be used</string>
-	<string name="vpn_openvpn_advanced_titlebar">Advanced Openvpn Settings</string>
-	<string name="vpn_openvpn_comp_lzo">LZO compression</string>
-	<string name="vpn_openvpn_comp_lzo_summary">Force LZO compression to be set to on</string>
-	<string name="vpn_openvpn_set_use_tls_auth">TLS-Auth</string>
-	<string name="vpn_openvpn_set_use_tls_auth_summary">Use a tls-auth key</string>
-	<string name="vpn_openvpn_set_tls_auth_key">TA key file location</string>
-	<string name="vpn_openvpn_set_tls_auth_key_summary"></string>
-	<string name="vpn_openvpn_set_tls_auth_key_direction">Tls-Auth key direction</string>
-	<string name="vpn_openvpn_redirect_gateway_title">Redirect gateway</string>
-	<string name="vpn_openvpn_redirect_gateway_summary">Force all traffic to be routed through the VPN
+    <string name="vpn_openvpn_advanced_titlebar">Advanced Openvpn Settings</string>
+    <string name="vpn_openvpn_comp_lzo">LZO compression</string>
+    <string name="vpn_openvpn_comp_lzo_summary">Force LZO compression to be set to on</string>
+    <string name="vpn_openvpn_ns_cert_type">Set NS cert type</string>
+    <string name="vpn_openvpn_set_use_tls_auth">TLS-Auth</string>
+    <string name="vpn_openvpn_set_use_tls_auth_summary">Use a tls-auth key</string>
+    <string name="vpn_openvpn_set_tls_auth_key">TA key file location</string>
+    <string name="vpn_openvpn_set_tls_auth_key_summary"></string>
+    <string name="vpn_openvpn_set_tls_auth_key_direction">Tls-Auth key direction</string>
+    <string name="vpn_openvpn_redirect_gateway_title">Redirect gateway</string>
+    <string name="vpn_openvpn_redirect_gateway_summary">Force all traffic to be routed through the VPN
 		tunnel</string>
-	<string name="vpn_openvpn_set_addr">Remote Sets Addresses</string>
-	<string name="vpn_openvpn_set_addr_summary">Uncheck to set tunnel addresses manually</string>
-	<string name="vpn_openvpn_set_local_addr">Local IP Address</string>
-	<string name="vpn_openvpn_set_remote_addr">Remote IP Address</string>
-	<string name="vpn_openvpn_set_cipher">Cipher algorithm</string>
-	<string name="vpn_openvpn_set_cipher_message">Leave empty to use default cipher</string>
-	<string name="vpn_openvpn_set_cipher_default">default</string>
-	<string name="vpn_openvpn_set_keysize">Size of cipher key</string>
-	<string name="vpn_openvpn_set_keysize_message">Leave empty to use cipher-specific default</string>
-	<string name="vpn_openvpn_set_keysize_default">default</string>
-	<string name="vpn_openvpn_set_extra">Extra arguments</string>
-	<string name="vpn_openvpn_set_extra_message">Enter the extra command line arguments, use space to split multiple options, use double quote to enclose option with space</string>
+    <string name="vpn_openvpn_set_addr">Remote Sets Addresses</string>
+    <string name="vpn_openvpn_set_addr_summary">Uncheck to set tunnel addresses manually</string>
+    <string name="vpn_openvpn_set_local_addr">Local IP Address</string>
+    <string name="vpn_openvpn_set_remote_addr">Remote IP Address</string>
+    <string name="vpn_openvpn_set_cipher">Cipher algorithm</string>
+    <string name="vpn_openvpn_set_cipher_message">Leave empty to use default cipher</string>
+    <string name="vpn_openvpn_set_cipher_default">default</string>
+    <string name="vpn_openvpn_set_keysize">Size of cipher key</string>
+    <string name="vpn_openvpn_set_keysize_message">Leave empty to use cipher-specific default</string>
+    <string name="vpn_openvpn_set_keysize_default">default</string>
+    <string name="vpn_openvpn_set_extra">Extra arguments</string>
+    <string name="vpn_openvpn_set_extra_message">Enter the extra command line arguments, use space to split multiple options, use double quote to enclose option with space</string>
 
-	<!-- Preference title -->
-	<string name="vpn_vpn_server_title">Set VPN server</string>
-	<!-- Complete term -->
-	<string name="vpn_vpn_server">VPN server</string>
-	<string name="vpn_a_vpn_server">a VPN server</string>
-	<!-- Dialog title for setting VPN server name -->
-	<string name="vpn_vpn_server_dialog_title">VPN server name</string>
+    <!-- Preference title -->
+    <string name="vpn_vpn_server_title">Set VPN server</string>
+    <!-- Complete term -->
+    <string name="vpn_vpn_server">VPN server</string>
+    <string name="vpn_a_vpn_server">a VPN server</string>
+    <!-- Dialog title for setting VPN server name -->
+    <string name="vpn_vpn_server_dialog_title">VPN server name</string>
 
-	<!-- Preference title -->
-	<string name="vpn_dns_search_list_title">DNS search domains</string>
-	<!-- Complete term -->
-	<string name="vpn_dns_search_list">DNS search domains</string>
+    <!-- Preference title -->
+    <string name="vpn_dns_search_list_title">DNS search domains</string>
+    <!-- Complete term -->
+    <string name="vpn_dns_search_list">DNS search domains</string>
 
-	<!-- Summary text to hint that the value is set -->
-	<string name="vpn_field_is_set">
-		<xliff:g id="value">%s</xliff:g>
-		is set
-	</string>
-	<!-- Summary text to hint that the value is not set -->
-	<string name="vpn_field_not_set">
-		<xliff:g id="value">%s</xliff:g>
-		not set
-	</string>
-	<!-- Summary text to hint that the value is not set but it's not required -->
-	<string name="vpn_field_not_set_optional">
-		<xliff:g id="value">%s</xliff:g>
-		not set (optional)
-	</string>
+    <!-- Summary text to hint that the value is set -->
+    <string name="vpn_field_is_set"><xliff:g id="value">%s</xliff:g>		is set</string>
+    <!-- Summary text to hint that the value is not set -->
+    <string name="vpn_field_not_set"><xliff:g id="value">%s</xliff:g>		not set</string>
+    <!-- Summary text to hint that the value is not set but it's not required -->
+    <string name="vpn_field_not_set_optional"><xliff:g id="value">%s</xliff:g>		not set (optional)</string>
 
-	<!-- CheckBoxPreference title to enable something -->
-	<string name="vpn_enable_field">
-		Enable
-		<xliff:g id="option">%s</xliff:g>
-	</string>
-	<!-- CheckBoxPreference title to disable something -->
-	<string name="vpn_disable_field">
-		Disable
-		<xliff:g id="option">%s</xliff:g>
-	</string>
+    <!-- CheckBoxPreference title to enable something -->
+    <string name="vpn_enable_field">		Enable<xliff:g id="option">%s</xliff:g></string>
+    <!-- CheckBoxPreference title to disable something -->
+    <string name="vpn_disable_field">		Disable<xliff:g id="option">%s</xliff:g></string>
 
-	<!-- CheckBoxPreference summary to hint that something is enabled -->
-	<string name="vpn_is_enabled">
-		<xliff:g id="option">%s</xliff:g>
-		is enabled
-	</string>
-	<!-- CheckBoxPreference summary to hint that something is disabled -->
-	<string name="vpn_is_disabled">
-		<xliff:g id="option">%s</xliff:g>
-		is disabled
-	</string>
+    <!-- CheckBoxPreference summary to hint that something is enabled -->
+    <string name="vpn_is_enabled"><xliff:g id="option">%s</xliff:g>		is enabled</string>
+    <!-- CheckBoxPreference summary to hint that something is disabled -->
+    <string name="vpn_is_disabled"><xliff:g id="option">%s</xliff:g>		is disabled</string>
 
-	<!-- Title of preference to enter the VPN settings activity -->
-	<string name="vpn_settings_title">VPN settings</string>
-	<!-- Summary of preference to enter the VPN settings activity -->
-	<string name="vpn_settings_summary">Set up &amp; manage Virtual Private Networks (VPNs)</string>
-	<!-- A secret edit field's grayed out value when it has not been modified -->
-	<string name="vpn_secret_unchanged">(unchanged)</string>
-	<!-- A secret edit field's grayed out value when it has not been set -->
-	<string name="vpn_secret_not_set">(not set)</string>
-	
-	<string name="openvpn_install_error_title">Can\'t install OpenVpn</string>
-	<string name="openvpn_installer_title">OpenVpn Installer</string>
-	<string name="openvpn_installer_openvpn_not_found">OpenVpn binary not exists</string>
-	<string name="openvpn_installer_installing">Installing OpenVpn…</string>
-	<string name="openvpn_installer_checking">Checking OpenVpn…</string>
-	<string name="openvpn_error_cert_file_error">Can\'t parse certification file</string>
-		
-	<string name="openvpn_log_dialog_title">Log</string>
-	<string name="vpn_view_log">View Log</string>
+    <!-- Title of preference to enter the VPN settings activity -->
+    <string name="vpn_settings_title">VPN settings</string>
+    <!-- Summary of preference to enter the VPN settings activity -->
+    <string name="vpn_settings_summary">Set up &amp; manage Virtual Private Networks (VPNs)</string>
+    <!-- A secret edit field's grayed out value when it has not been modified -->
+    <string name="vpn_secret_unchanged">(unchanged)</string>
+    <!-- A secret edit field's grayed out value when it has not been set -->
+    <string name="vpn_secret_not_set">(not set)</string>
+    <string name="openvpn_install_error_title">Can\'t install OpenVpn</string>
+    <string name="openvpn_installer_title">OpenVpn Installer</string>
+    <string name="openvpn_installer_openvpn_not_found">OpenVpn binary not exists</string>
+    <string name="openvpn_installer_installing">Installing OpenVpn…</string>
+    <string name="openvpn_installer_checking">Checking OpenVpn…</string>
+    <string name="openvpn_error_cert_file_error">Can\'t parse certification file</string>
+    <string name="openvpn_log_dialog_title">Log</string>
+    <string name="vpn_view_log">View Log</string>
+
 </resources>

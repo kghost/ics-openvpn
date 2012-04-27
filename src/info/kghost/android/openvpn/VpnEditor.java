@@ -221,20 +221,7 @@ public class VpnEditor extends PreferenceActivity {
 				Log.e(TAG, "no profile from advanced settings");
 				return;
 			}
-			// manually copy across all advanced settings
-			mProfile.setPort(newP.getPort());
-			mProfile.setProto(newP.getProto());
-			mProfile.setUseCompLzo(newP.getUseCompLzo());
-			mProfile.setRedirectGateway(newP.getRedirectGateway());
-			mProfile.setSupplyAddr(newP.getSupplyAddr());
-			mProfile.setLocalAddr(newP.getLocalAddr());
-			mProfile.setRemoteAddr(newP.getRemoteAddr());
-			mProfile.setCipher(newP.getCipher());
-			mProfile.setKeySize(newP.getKeySize());
-			mProfile.setExtra(newP.getExtra());
-			mProfile.setUseTlsAuth(newP.getUseTlsAuth());
-			mProfile.setTlsAuthKey(newP.getTlsAuthKey());
-			mProfile.setTlsAuthKeyDirection(newP.getTlsAuthKeyDirection());
+			mProfile = newP;
 		}
 	}
 
