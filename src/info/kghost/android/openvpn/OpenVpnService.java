@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -25,6 +26,8 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.spongycastle.openssl.PEMWriter;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -117,36 +120,56 @@ public class OpenVpnService extends VpnService {
 			}
 
 			try {
-				KeyStore pkcs12Store = KeyStore.getInstance("PKCS12");
-				pkcs12Store.load(null, null);
+				if (profile.getUserCertName() != null) {
+					KeyStore pkcs12Store = KeyStore.getInstance("PKCS12");
+					pkcs12Store.load(null, null);
 
-				PrivateKey pk = KeyChain.getPrivateKey(OpenVpnService.this,
-						profile.getUserCertName());
-				X509Certificate[] chain = KeyChain.getCertificateChain(
-						OpenVpnService.this, profile.getUserCertName());
-				pkcs12Store.setKeyEntry("key", pk, null, chain);
+					PrivateKey pk = KeyChain.getPrivateKey(OpenVpnService.this,
+							profile.getUserCertName());
+					X509Certificate[] chain = KeyChain.getCertificateChain(
+							OpenVpnService.this, profile.getUserCertName());
+					pkcs12Store.setKeyEntry("key", pk, null, chain);
 
-				if (profile.getCertName() != null) {
+					if (profile.getCertName() != null) {
+						KeyStore localTrustStore = KeyStore.getInstance("BKS");
+						localTrustStore
+								.load(new ByteArrayInputStream(profile
+										.getCertName()), null);
+						Certificate root = localTrustStore.getCertificate("c");
+						if (root != null)
+							pkcs12Store.setCertificateEntry("root", root);
+					}
+
+					ByteArrayOutputStream f = new ByteArrayOutputStream();
+					pkcs12Store.store(f, "".toCharArray());
+
+					config.add("--pkcs12");
+					config.add("[[INLINE]]");
+					config.add(Base64.encodeToString(f.toByteArray(),
+							Base64.DEFAULT));
+					f.close();
+				} else if (profile.getCertName() != null) {
 					KeyStore localTrustStore = KeyStore.getInstance("BKS");
 					localTrustStore.load(
 							new ByteArrayInputStream(profile.getCertName()),
 							null);
 					Certificate root = localTrustStore.getCertificate("c");
-					if (root != null)
-						pkcs12Store.setCertificateEntry("root", root);
+
+					if (root == null)
+						throw new RuntimeException(
+								"Certificate authority error");
+					StringWriter s = new StringWriter();
+					PEMWriter w = new PEMWriter(s);
+					w.writeObject(root);
+					w.flush();
+					config.add("--ca");
+					config.add("[[INLINE]]");
+					config.add("# CA cert below\n" + s.toString());
+					w.close();
 				}
-
-				ByteArrayOutputStream f = new ByteArrayOutputStream();
-				pkcs12Store.store(f, "".toCharArray());
-
-				config.add("--pkcs12");
-				config.add("[[INLINE]]");
-				byte[] bytes = f.toByteArray();
-				f.close();
-				config.add(Base64.encodeToString(bytes, Base64.DEFAULT));
 			} catch (Exception e) {
-				Log.w(OpenVpnService.class.getName(), "Error generate pkcs12",
-						e);
+				Log.w(OpenVpnService.class.getName(),
+						"Error passing certifications", e);
 				throw e;
 			}
 
