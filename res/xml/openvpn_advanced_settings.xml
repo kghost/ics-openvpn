@@ -70,7 +70,7 @@
         android:summary="@string/vpn_openvpn_set_use_tls_auth_summary"
         android:title="@string/vpn_openvpn_set_use_tls_auth" />
 
-    <EditTextPreference
+    <info.kghost.android.openvpn.FilePickPreference
         android:dependency="set_use_tls_auth"
         android:dialogTitle="@string/vpn_openvpn_set_tls_auth_key"
         android:inputType="text"

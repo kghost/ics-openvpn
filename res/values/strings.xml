@@ -145,6 +145,8 @@
     <string name="vpn_a_vpn_server">a VPN server</string>
     <!-- Dialog title for setting VPN server name -->
     <string name="vpn_vpn_server_dialog_title">VPN server name</string>
+    <string name="vpn_vpn_cert_choose_title">Select certification file</string>
+    <string name="vpn_vpn_tls_key_choose_title">Select tls key file</string>
 
     <!-- Preference title -->
     <string name="vpn_dns_search_list_title">DNS search domains</string>

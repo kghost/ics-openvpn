@@ -1,6 +1,9 @@
 package info.kghost.android.openvpn;
 
+import java.net.URISyntaxException;
+
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.CheckBoxPreference;
@@ -37,7 +40,7 @@ public class AdvancedSettings extends PreferenceActivity {
 	private EditTextPreference mCipher;
 	private EditTextPreference mKeySize;
 	private CheckBoxPreference mUseTlsAuth;
-	private EditTextPreference mTlsAuthKey;
+	private FilePickPreference mTlsAuthKey;
 	private ListPreference mTlsAuthKeyDirection;
 	private EditTextPreference mExtra;
 
@@ -63,7 +66,7 @@ public class AdvancedSettings extends PreferenceActivity {
 		mKeySize = (EditTextPreference) findPreference(KEY_KEYSIZE);
 		mExtra = (EditTextPreference) findPreference(KEY_EXTRA);
 		mUseTlsAuth = (CheckBoxPreference) findPreference(KEY_USE_TLS_AUTH);
-		mTlsAuthKey = (EditTextPreference) findPreference(KEY_TLS_KEY);
+		mTlsAuthKey = (FilePickPreference) findPreference(KEY_TLS_KEY);
 		mTlsAuthKeyDirection = (ListPreference) findPreference(KEY_TLS_AUTH_KEY_DIRECTION);
 
 		mPort.setSummary(profile.getPort());
@@ -223,16 +226,19 @@ public class AdvancedSettings extends PreferenceActivity {
 				});
 
 		mTlsAuthKey.setSummary(profile.getTlsAuthKey());
-		mTlsAuthKey.setText(profile.getTlsAuthKey());
 		mTlsAuthKey
 				.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
 					public boolean onPreferenceChange(Preference pref,
-							Object newValue) {
-						String name = (String) newValue;
-						name.trim();
-						profile.setTlsAuthKey(name);
-						mTlsAuthKey.setSummary(profile.getTlsAuthKey());
-
+							Object data) {
+						try {
+							String name = Util.getPath(AdvancedSettings.this,
+									Uri.parse((String) data));
+							profile.setTlsAuthKey(name);
+							mTlsAuthKey.setSummary(profile.getTlsAuthKey());
+						} catch (URISyntaxException e) {
+							Util.showLongToastMessage(AdvancedSettings.this,
+									e.getLocalizedMessage());
+						}
 						return true;
 					}
 				});

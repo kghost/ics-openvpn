@@ -13,7 +13,7 @@ class LogQueue implements Parcelable, Iterable<String> {
 
 	public LogQueue(int size) {
 		this.size = size + 1;
-		buffer = new String[size];
+		buffer = new String[size+1];
 	}
 
 	private LogQueue(Parcel in) {

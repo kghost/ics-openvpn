@@ -5,9 +5,18 @@ import android.content.Context;
 import android.preference.Preference;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
+import android.util.AttributeSet;
 
 class KeyChoosePreference extends Preference {
 	private String mValue;
+
+	public KeyChoosePreference(Context context, AttributeSet attrs, int defStyle) {
+		super(context, attrs, defStyle);
+	}
+
+	public KeyChoosePreference(Context context, AttributeSet attrs) {
+		super(context, attrs);
+	}
 
 	public KeyChoosePreference(Context context) {
 		super(context);

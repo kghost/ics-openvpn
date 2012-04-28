@@ -175,6 +175,13 @@ public class OpenVpnService extends VpnService {
 				throw e;
 			}
 
+			if (profile.getUseTlsAuth()) {
+				config.add("--tls-auth");
+				config.add(profile.getTlsAuthKey());
+				if (!"None".equals(profile.getTlsAuthKeyDirection()))
+					config.add(profile.getTlsAuthKeyDirection());
+			}
+
 			if (profile.getExtra() != null)
 				for (String s : profile.getExtra().trim()
 						.split(" +(?=([^\"]*\"[^\"]*\")*[^\"]*$)"))
@@ -414,6 +421,8 @@ public class OpenVpnService extends VpnService {
 
 		@Override
 		protected void onPreExecute() {
+			log = new LogQueue(63);
+
 			update(R.string.vpn_preparing);
 		}
 
@@ -544,7 +553,7 @@ public class OpenVpnService extends VpnService {
 	};
 
 	private void restoreLog() {
-		File logfile = new File(getCacheDir(), "log");
+		File logfile = new File(getCacheDir(), "log.2");
 		if (logfile.exists()) {
 			int length;
 			InputStream is = null;
@@ -561,7 +570,9 @@ public class OpenVpnService extends VpnService {
 				if (offset == length) {
 					Parcel parcel = Parcel.obtain();
 					parcel.unmarshall(bytes, 0, length);
-					Parcelable o = parcel.readParcelable(null);
+					parcel.setDataPosition(0);
+					Parcelable o = parcel.readParcelable(LogQueue.class
+							.getClassLoader());
 					if (o instanceof LogQueue) {
 						log = (LogQueue) o;
 					}
@@ -575,13 +586,11 @@ public class OpenVpnService extends VpnService {
 					}
 			}
 		}
-		if (log == null)
-			log = new LogQueue(63);
 	}
 
 	private void saveLog() {
 		if (log != null) {
-			File logfile = new File(getCacheDir(), "log");
+			File logfile = new File(getCacheDir(), "log.2");
 			Parcel parcel = Parcel.obtain();
 			parcel.writeParcelable(log, 0);
 			byte[] bytes = parcel.marshall();

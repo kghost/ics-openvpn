@@ -19,4 +19,16 @@
         android:summary="@string/vpn_openvpn_userauth_summary"
         android:title="@string/vpn_openvpn_userauth" />
 
+    <info.kghost.android.openvpn.FilePickPreference
+        android:dialogTitle="@string/vpn_ca_certificate"
+        android:key="vpn_cert"
+        android:summary="@string/vpn_ca_certificate_title"
+        android:title="@string/vpn_ca_certificate" />
+
+    <info.kghost.android.openvpn.KeyChoosePreference
+        android:dialogTitle="@string/vpn_user_certificate"
+        android:key="vpn_user_cert"
+        android:summary="@string/vpn_user_certificate_title"
+        android:title="@string/vpn_user_certificate" />
+
 </PreferenceScreen>

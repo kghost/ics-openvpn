@@ -2,8 +2,10 @@ package info.kghost.android.openvpn;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 
@@ -14,6 +16,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -36,7 +39,6 @@ public class VpnEditor extends PreferenceActivity {
 	private static final int MENU_CANCEL = Menu.FIRST + 1;
 	private static final int MENU_ID_ADVANCED = Menu.FIRST + 2;
 
-	private static final int FILE_SELECT_CODE = 0;
 	private static final int REQUEST_ADVANCED = 1;
 
 	static final String KEY_PROFILE = "openvpn_profile";
@@ -49,11 +51,13 @@ public class VpnEditor extends PreferenceActivity {
 	private static final String KEY_VPN_NAME = "vpn_name";
 	private static final String KEY_VPN_SERVER_NAME = "vpn_server_name";
 	private static final String KEY_VPN_USERAUTH = "vpn_userauth";
+	private static final String KEY_VPN_CERT = "vpn_cert";
+	private static final String KEY_VPN_USER_CERT = "vpn_user_cert";
 
 	private EditTextPreference mName;
 	private Preference mServerName;
 	private CheckBoxPreference mUserAuth;
-	private CertChoosePreference mCert;
+	private FilePickPreference mCert;
 	private Preference mUserCert;
 
 	@Override
@@ -117,8 +121,7 @@ public class VpnEditor extends PreferenceActivity {
 					}
 				});
 
-		mCert = new CertChoosePreference(this);
-		mCert.setTitle(R.string.vpn_ca_certificate);
+		mCert = (FilePickPreference) subpanel.findPreference(KEY_VPN_CERT);
 		if (mProfile.getCertName() != null) {
 			try {
 				KeyStore ks = KeyStore.getInstance("BKS");
@@ -128,41 +131,50 @@ public class VpnEditor extends PreferenceActivity {
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-		} else {
-			mCert.setSummary(R.string.vpn_ca_certificate_title);
 		}
 		mCert.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
 			@Override
-			public boolean onPreferenceChange(Preference pref, Object newValue) {
-				Certificate cert = (Certificate) newValue;
+			public boolean onPreferenceChange(Preference pref, Object data) {
 				try {
-					KeyStore ks = KeyStore.getInstance("BKS");
-					ks.load(null, null);
-					ks.setCertificateEntry("c", cert);
-					ByteArrayOutputStream out = new ByteArrayOutputStream();
-					ks.store(out, null);
-					mProfile.setCertName(out.toByteArray());
-					runOnUiThread(new RunnableEx<String>(cert.toString()) {
-						@Override
-						public void run(String cert) {
-							mCert.setSummary(cert);
-						}
-					});
-				} catch (Exception e) {
-					throw new RuntimeException(e);
+					String path = Util.getPath(VpnEditor.this,
+							Uri.parse((String) data));
+					if (path == null)
+						throw new FileNotFoundException(data.toString());
+					PEMReader r = new PEMReader(new FileReader(path));
+					try {
+						Certificate cert = (Certificate) r.readObject();
+						if (cert != null)
+							try {
+								KeyStore ks = KeyStore.getInstance("BKS");
+								ks.load(null, null);
+								ks.setCertificateEntry("c", cert);
+								ByteArrayOutputStream out = new ByteArrayOutputStream();
+								ks.store(out, null);
+								mProfile.setCertName(out.toByteArray());
+								mCert.setSummary(cert.toString());
+								return true;
+							} catch (Exception e) {
+								throw new RuntimeException(e);
+							}
+						else
+							Util.showLongToastMessage(VpnEditor.this,
+									R.string.openvpn_error_cert_file_error);
+					} finally {
+						r.close();
+					}
+				} catch (IOException e) {
+					Util.showLongToastMessage(VpnEditor.this,
+							e.getLocalizedMessage());
+				} catch (URISyntaxException e) {
+					Util.showLongToastMessage(VpnEditor.this,
+							e.getLocalizedMessage());
 				}
-				return true;
+				return false;
 			}
 		});
-		mCert.setOnPreferenceClickListener(new FileChooseClickListener(this,
-				VpnEditor.FILE_SELECT_CODE));
-		subpanel.addPreference(mCert);
 
-		mUserCert = new KeyChoosePreference(this);
-		mUserCert.setTitle(R.string.vpn_user_certificate);
-		if (mProfile.getUserCertName() == null) {
-			mUserCert.setSummary(R.string.vpn_user_certificate_title);
-		} else {
+		mUserCert = subpanel.findPreference(KEY_VPN_USER_CERT);
+		if (mProfile.getUserCertName() != null) {
 			mUserCert.setSummary(mProfile.getUserCertName());
 		}
 		mUserCert
@@ -181,7 +193,6 @@ public class VpnEditor extends PreferenceActivity {
 						return true;
 					}
 				});
-		subpanel.addPreference(mUserCert);
 	}
 
 	@Override
@@ -192,30 +203,13 @@ public class VpnEditor extends PreferenceActivity {
 	@Override
 	protected void onActivityResult(final int requestCode,
 			final int resultCode, final Intent data) {
-		System.out.println("ON ACTIVITY RESULT req=" + requestCode);
+		super.onActivityResult(requestCode, resultCode, data);
+
 		if ((resultCode == RESULT_CANCELED) || (data == null)) {
 			Log.d(TAG, "no result returned by editor");
 			return;
 		}
-		if (requestCode == FILE_SELECT_CODE) {
-			String path = data.getData().getPath();
-
-			try {
-				PEMReader r = new PEMReader(new FileReader(path));
-				try {
-					Certificate k = (Certificate) r.readObject();
-					if (k != null)
-						mCert.change(k);
-					else
-						Util.showLongToastMessage(this,
-								R.string.openvpn_error_cert_file_error);
-				} finally {
-					r.close();
-				}
-			} catch (IOException e) {
-				Util.showLongToastMessage(this, e.getLocalizedMessage());
-			}
-		} else if (requestCode == REQUEST_ADVANCED) {
+		if (requestCode == REQUEST_ADVANCED) {
 			OpenvpnProfile newP = data.getParcelableExtra(KEY_PROFILE);
 			if (newP == null) {
 				Log.e(TAG, "no profile from advanced settings");

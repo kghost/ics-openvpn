@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>info.kghost.android</groupId>
 	<artifactId>openvpn</artifactId>
-	<version>0.9.2</version>
+	<version>0.9.3</version>
 	<packaging>apk</packaging>
 	<name>OpenVpn</name>
 
