@@ -1,7 +1,7 @@
 How To Build
 ============
 
-Put the [prebuild openvpn binary](https://github.com/kghost/android_external_openvpn/tree/ics) to "assets/openvpn" then:
+Put the [prebuild openvpn binary](https://github.com/CyanogenMod/android_external_openvpn/tree/ics) to "assets/openvpn" then:
 
 Method 1. Build with android soure tree (recommanded)
 -----------------------------------------------------
