@@ -111,6 +111,10 @@ public class OpenVpnService extends VpnService {
 				config.add(profile.getNsCertType());
 			}
 
+			if (profile.getRedirectGateway()) {
+				config.add("--redirect-gateway");
+			}
+
 			if (profile.getCipher() != null) {
 				config.add("--cipher");
 				config.add(profile.getCipher());
